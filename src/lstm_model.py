@@ -38,25 +38,6 @@ def prepare_data(df):
     print(y.shape)
     return X, y, scaler 
 
-"""
-def build_lstm():
-
-    model = Sequential()
-
-    model.add(Input(shape=(60, 1)))
-
-    model.add(LSTM(4))
-
-    model.add(Dense(1))
-
-    model.compile(
-        optimizer="adam",
-        loss="mean_squared_error"
-    )
-
-    return model
-
-"""
 def build_lstm():
 
     model = Sequential()        # layers are added one after another
@@ -83,58 +64,26 @@ def train_lstm(df):
 
     print("starting fit")
 
-    print(X.dtype)
-    print(y.dtype)
+    # print(X.dtype)
+    # print(y.dtype)
 
-    print(np.isnan(X).sum())
-    print(np.isnan(y).sum())
+    # print(np.isnan(X).sum())
+    # print(np.isnan(y).sum())
 
-    print(np.isinf(X).sum())
-    print(np.isinf(y).sum())
+    # print(np.isinf(X).sum())
+    # print(np.isinf(y).sum())
 
-    model.fit(X, y, epochs = 3, batch_size = 32, verbose = 1)       # epoch = one complete pass through the entire training dataset (model learns a little more each epoch). batch_size = groups of 32 at a time 
+    model.fit(X, y, epochs = 10, batch_size = 32, verbose = 1)       # epoch = one complete pass through the entire training dataset (model learns a little more each epoch). batch_size = groups of 32 at a time 
 
     print("finished fittt")
 
     return model, scaler 
 
-'''
-def predict_next(model, df, scaler):
-
-    print("called")
-
-    if len(df) < 60:
-        return 0.0
-    
-    print("checked")
-
-    data = df[["Close"]].values[-60:].astype("float32")          # .values converts to numpy array (by extracting raw numerical array) from pandas df 
-
-    print("converted ")
-    scaled = scaler.transform(data).astype("float32")
-    print("sclaed")
-    # X = np.array([scaled])                      # creates a new numpy array from existing array. also creates another array and adds extra dimension with []
-    X = scaled.reshape((1, 60, 1)).astype("float32")
-
-    print("reshaped")
-
-    prediction = model.predict(X, verbose=0)
-
-    print("predicted")
-
-    prediction = scaler.inverse_transform(prediction)[0, 0]
-
-
-
-    print("inversed")
-
-    return float(prediction)
-'''
 def predict_next(model, df, scaler):
 
     print("STEP 1")
 
-    data = df[["Close"]].values[-60:].astype("float32")
+    data = df[["Close"]].values[-60:].astype("float32")             # .values converts to numpy array (by extracting raw numerical array) from pandas df 
 
     print("STEP 2")
 
@@ -146,11 +95,11 @@ def predict_next(model, df, scaler):
 
     print("STEP 4")
 
-    # prediction = model(X, training = False).numpy()
+    prediction = model(X, training = False).numpy()
 
-    prediction = tf.convert_to_tensor(X)
-    prediction = model(prediction, training=False)
-    prediction = prediction.numpy()
+    # prediction = tf.convert_to_tensor(X)
+    # prediction = model(prediction, training=False)
+    # prediction = prediction.numpy()
 
     print("STEP 5")
 

@@ -11,7 +11,8 @@ def load_stock_dataset(ticker, period="2y"):    # ticker = stock symbol for want
 
     # df = data frame (a table structure from pandas library which is a python lib for data in tables). pandas help with storing, organising, cleaning, analysing data
 
-    df = stock.history(period=period)   # history method downloads stock price data 
+    # yfinance creates DataFrame instead of having to manually use pandas lib
+    df = stock.history(period=period)   # history method downloads stock price data. history() uses pandas internally to create a dataframe. can use dataframe methods because df is already a dataframe 
 
     return df 
 
@@ -19,3 +20,11 @@ def load_stock_dataset(ticker, period="2y"):    # ticker = stock symbol for want
 yfinance - gets stock data
 pandas - stores and analyses the data
 """
+
+# Inside yfinance (simplified)
+# def history(...):
+#     import pandas as pd
+
+#     data = ...
+#     df = pd.DataFrame(data)
+#     return df

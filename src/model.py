@@ -2,6 +2,8 @@ from sklearn.ensemble import RandomForestClassifier     # AI classification algo
 from sklearn.model_selection import train_test_split    
 from sklearn.metrics import accuracy_score      # measures prediction accuracy 
 
+import joblib, os
+
 # train = teaches AI. test = evals AI
 
 def train_model(df):
@@ -33,4 +35,8 @@ def train_model(df):
 
     accuracy = accuracy_score(y_test, predictions)      # calc accuracy. compares real answers (y_test) and AI predictions (predictions)
 
-    return model, accuracy
+    os.makedirs("models", exist_ok=True)
+    joblib.dump(model, "models/random_forest.pkl")
+
+
+    return model, accuracy, X_test, predictions

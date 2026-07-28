@@ -83,3 +83,18 @@ def create_trade_signals(df):
     )
 
     return df
+
+def calc_bollinger_bands(df, window=20):
+    """
+    measure volatility around ma
+    price near upper band = potentially overbought
+    price near lower band = potentially oversold 
+    """
+    df["BB_Middle"] = df["Close"].rolling(window).mean()
+    std = df["Close"].rolling(window).std()                     # std of closing price
+    df["BB_Upper"] = df["BB_Middle"] + (2*std)                  # 2 std above middle 
+    df["BB_Lower"] = df["BB_Middle"] - (2*std)
+
+    return df
+
+# if __name__ == "__main__":
