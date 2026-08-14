@@ -106,7 +106,21 @@ def walk_forward(df, n_splits=5):
     from sklearn.metrics import accuracy_score
 
     df = df.dropna()
-    features = ["MA_10", "MA_50", "Daily_Return"]
+
+    features = [
+        "MA_10", 
+        "MA_50", 
+        "Daily_Return",
+        "Volume_Ratio",
+        "Volatility",
+        "Momentum_5",
+        "Momentum_10",
+        "Dist_MA_10",
+        "Dist_MA_50",
+        "RSI",
+        "MACD",
+    ]
+
     X = df[features]                                        # can also write as X = df[["MA_10", "MA_50", "Daily_Return"]]
     Y = df["Target"]
 

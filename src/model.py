@@ -13,7 +13,16 @@ def train_model(df):
     features = [        # input features (col names). equiv to df[["MA_10", "MA_50", "Daily_Return"]]
         "MA_10",
         "MA_50",
-        "Daily_Return"
+        "Daily_Return",
+        "Volume_Ratio",
+        "Volatility",
+        "Momentum_5",
+        "Momentum_10",
+        "Dist_MA_10",
+        "Dist_MA_50",
+        "RSI",
+        "MACD",
+
     ]
 
     X = df[features]    # X = inputs in ML ("from df, select [item] in features")
