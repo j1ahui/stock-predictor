@@ -20,6 +20,21 @@ def add_indicators(df):
     # .shift(-1) = moves col up by 1 (compares tomorrows and todays closing)
     # astype converts boolean vals to ints (1, 0) - from [True, False] to [1, 0]
 
+    # volume
+    df["Volume_MA_10"] = df["Volume"].rolling(10).mean()
+    df["Volume_Ratio"] = df["Volume"] / df["Volume_MA_10"]      # todays vol vs average - detects spikes
+
+    # volatility
+    df["Volatility"] = df["Daily_Return"].rolling(10).std()     # how much price fluctuates
+
+    # momentum
+    df["Momentum_5"] = df["Close"] - df["Close"].shift(5)       # price change over last 5 days 
+    df["Momentum_10"] = df["Close"] - df["Close"].shift(10)
+
+    # price distance from moving averages
+    df["Dist_MA_10"] = (df["Close"] - df["MA_10"]) / df["MA_10"]    # how far price is from MA_10
+    df["Dist_MA_50"] = (df["Close"] - df["MA_50"]) / df["MA_50"]
+
     return df   # returns modified df with new indicator col added
 
 def calc_rsi(df, window=14):
