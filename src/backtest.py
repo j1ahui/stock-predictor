@@ -1,6 +1,13 @@
 import numpy as np 
 
-def generate_signals_rf(predictions):
+def generate_signals_rf(predictions, probabilities=None, threshold=0.6):
+    """
+    threshold = minimum confidence to trigger a buy signal
+    default 0.6 = model must be 60% confidence to buy
+    if no probabilities passed, falls back to basic 0/1 predictions
+    """
+    if probabilities is not None:
+        return(probabilities[:, 1] >= threshold).astype(int)        # numpy/pandas indexing 2d array. probabilities[:, 1] = take every row but only column no. 1
 
     return (predictions == 1).astype(int)
 

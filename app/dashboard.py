@@ -277,10 +277,10 @@ elif selected == "Predictions":
 
         if os.path.exists(model_path):
             model = joblib.load(model_path)
-            _, accuracy, X_test, predictions = train_model(df)
+            _, accuracy, X_test, predictions, probabilities = train_model(df)
 
         else:
-            model, accuracy, X_test, predictions = train_model(df)
+            model, accuracy, X_test, predictions, probabilities = train_model(df)
             
         # df["Target"] = (
         #     df["Close"].shift(-1) > df["Close"]
@@ -338,7 +338,7 @@ elif selected == "Predictions":
         # ----------------- BACKTEST  -----------------
 
 
-        signals = generate_signals_rf(predictions)
+        signals = generate_signals_rf(predictions, probabilities, threshold=0.6)
 
         final_capital, pnl_history = backtest(
             df.loc[X_test.index].reset_index(drop=True),
@@ -530,8 +530,8 @@ elif selected == "Predictions":
         )
 
         st.subheader("Backtest Results")
-        st.write("Starting Capital: $10,0000")
-        st.write("Final Capital: ", round(final_capital, 2))
+        st.write("Starting Capital: $10,000")
+        st.write("Final Capital: ", round(float(final_capital), 2))
         st.write("Sharpe Ratio: ", round(sharpe_ratio(pnl_history), 4))
         st.write("Max Drawdown: $", round(max_drawdown(pnl_history), 2))
 

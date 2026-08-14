@@ -10,7 +10,7 @@ def train_model(df):
 
     df = df.dropna()    # drops missing values 
 
-    features = [        # input features (col names). equiv to df[["MA_10", "MA_50", "Daily_Return"]]
+    features = [        # input features (col names). gives model multiple indicators describing current state of stock
         "MA_10",
         "MA_50",
         "Daily_Return",
@@ -25,7 +25,7 @@ def train_model(df):
 
     ]
 
-    X = df[features]    # X = inputs in ML ("from df, select [item] in features")
+    X = df[features]    # X = inputs in ML ("from df, select [item] in features"). X = NEW DATAFRAME !!!!
 
     y = df["Target"]    # y = outputs (contains correct answers/labels)
 
@@ -36,16 +36,17 @@ def train_model(df):
         shuffle=False       # order matters for market/time series data
     )
 
-    model = RandomForestClassifier()    # random forest = collection of many decision trees. each tree makes a prediction (up or down). forest votes on final answer 
+    model = RandomForestClassifier()    # random forest = collection of many decision trees. each tree makes a prediction (up or down). forest uses majority vote 
 
-    model.fit(X_train, y_train)     # training 
+    model.fit(X_train, y_train)     # tree learns decision tree rules from training data (features + the answers -> then identifies patterns to separate the two classes)
 
-    predictions = model.predict(X_test)     # AI tries predicting unseen data 
+    predictions = model.predict(X_test)     # predicting unseen data 
+    probabilities = model.predict_proba(X_test)
 
-    accuracy = accuracy_score(y_test, predictions)      # calc accuracy. compares real answers (y_test) and AI predictions (predictions)
+    accuracy = accuracy_score(y_test, predictions)      # calc accuracy. compares real answers (y_test) and forest predictions
 
-    os.makedirs("models", exist_ok=True)
-    joblib.dump(model, "models/random_forest.pkl")
+    os.makedirs("models", exist_ok=True)                # creating a folder, saving trained model to my computer (prevents retraining)
+    joblib.dump(model, "models/random_forest.pkl")      # takes model and saved to file (in string)
 
 
-    return model, accuracy, X_test, predictions
+    return model, accuracy, X_test, predictions, probabilities
