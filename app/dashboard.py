@@ -4,8 +4,19 @@
 # os.environ["OMP_NUM_THREADS"] = "1"
 
 # creating a stock market web app 
-# import sys
+import sys, os
+import streamlit as st 
 # sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+# ROOT_DIR = os.path.abspath(
+    # os.path.join(os.path.dirname(__file__), "..")
+# )
+
+# sys.path.insert(0, ROOT_DIR)
+
+# st.write("ROOT:", ROOT_DIR)
+# st.write("ROOT FILES:", os.listdir(ROOT_DIR))
+# st.write("SRC EXISTS:", os.path.exists(os.path.join(ROOT_DIR, "src")))
 
 from src.data_loader import load_stock_dataset
 from src.indicators import add_indicators, calc_rsi, calc_macd, create_trade_signals, calc_bollinger_bands
@@ -22,7 +33,7 @@ from sklearn.metrics import accuracy_score
 import streamlit as st      # user interface
 import yfinance as yf 
 import plotly.graph_objects as go
-import joblib, os
+import joblib
 import pandas as pd
 import tensorflow as tf
 import numpy as np
