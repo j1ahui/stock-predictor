@@ -288,25 +288,24 @@ elif selected == "Predictions":
 
         if os.path.exists(model_path):
             model = joblib.load(model_path)
-            _, accuracy, X_test, predictions, probabilities = train_model(df)
+            _, accuracy, X_test, predictions, probabilities, X_latest = train_model(df, target_column="Target_1Day", model_path="models/random_forest_1day.pkl")
 
         else:
-            model, accuracy, X_test, predictions, probabilities = train_model(df)
-            
-        # df["Target"] = (
-        #     df["Close"].shift(-1) > df["Close"]
-        # ).astype(int)
-
-        # model, accuracy = train_model(df)
-
-        # current_price = df["Close"].iloc[-1]
-
+            model_1day, accuracy_1dat, X_test_1day, predictions_1day, probabilities_1day, X_latest = train_model(df, "Target_1Day")
+        
         st.subheader("Model Predictions - Random Forest")
+
+        model_1day = joblib.load("models/random_forest_1day.pkl")
+
+        X_latest = df[["MA_10", "MA_50", "Daily_Return", "Volume_Ratio", "Volatility", "Momentum_5", "Momentum_10", "Dist_MA_10", "Dist_MA_50", "RSI", "MACD"]].iloc[-1:]
 
         st.write("Current Price", round(current_price, 2))
 
-        prediction = "UP" if accuracy > 0.5 else "DOWN" 
-        st.write("Prediction: ", prediction)
+        predictions_1day = model_1day.predict(X_latest)[0]
+        probabilities_1day = model_1day.predict_proba(X_latest)[0, 1]
+
+        st.write("1-Day Prediction: ", "UP" if predictions_1day == 1 else "DOWN")
+        st.write("Probaility of UP: ", round(probabilities_1day * 100, 2), "%")
         st.write("Model Accuracy; ", round(accuracy * 100, 2), "%")
 
         # ----------------- ACTUAL VS PREDICTED GRAPH  -----------------
@@ -392,7 +391,7 @@ elif selected == "Predictions":
 
 
         st.subheader("Walk Forward Testing")
-        fold_results, wf_pnl = walk_forward(df)
+        fold_results, wf_pnl = walk_forward(df, "Target_1Day")
 
         import pandas as pd 
         st.dataframe(pd.DataFrame(fold_results), width="stretch")

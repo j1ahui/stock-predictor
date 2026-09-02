@@ -6,7 +6,7 @@ import joblib, os
 
 # train = teaches AI. test = evals AI
 
-def train_model(df, target_column):
+def train_model(df, target_column, model_path):
 
     df = df.dropna()                    # drops missing values 
 
@@ -48,8 +48,9 @@ def train_model(df, target_column):
     latest = df.dropna().iloc[-1:]                      # models prediction for stock as of right now
     X_latest = latest[features]
 
-    os.makedirs("models", exist_ok=True)                # creating a folder, saving trained model to my computer (prevents retraining)
-    joblib.dump(model, "models/random_forest.pkl")      # takes model and save to file (in string)
+    # os.makedirs("models", exist_ok=True)                # creating a folder, saving trained model to my computer (prevents retraining)
+    # joblib.dump(model, "models/random_forest.pkl")      # takes model and save to file (in string)
 
+    joblib.dump(model, model_path)
 
     return model, accuracy, X_test, predictions, probabilities, X_latest

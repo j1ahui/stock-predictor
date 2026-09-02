@@ -100,7 +100,7 @@ def calc_risk_score(pnl_history, periods_per_year=252):
     return round(min(max(score, 1), 10), 1)
 
 
-def walk_forward(df, n_splits=5):
+def walk_forward(df, target_column, n_splits=5):
     """
     Splits data into n_splits chunks.
     Trains on each chunk, tests on the next.
@@ -129,7 +129,7 @@ def walk_forward(df, n_splits=5):
     ]
 
     X = df[features]                                        # can also write as X = df[["MA_10", "MA_50", "Daily_Return"]]
-    Y = df["Target"]
+    Y = df[target_column]
 
     fold_size = len(df) // n_splits                         # returns num of rows. fold = one chunk of dataset. (suppose len(df) = 1000 then fold_size = 1000 // 5 = 200). 5 x 200 chunks = 5 folds but fold_size = 200 
     all_pnl = []

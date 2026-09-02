@@ -5,6 +5,9 @@ from src.lstm_model import prepare_data, build_lstm, train_lstm, predict_next
 
 df = load_stock_dataset("AAPL")
 df = add_indicators(df)
+df = calc_rsi(df)
+df = calc_macd(df)
+
 
 print(df.columns.tolist())
 print(df.head().to_string())    # pandas function displaying first few rows of DataFrame (commonly used to quickly inspect data and check that it loaded correctly)
@@ -12,8 +15,11 @@ print(df.iloc[50:55].to_string())
 
 df["Target"] = (df["Close"].shift(-1) > df["Close"]).astype(int)
 
-model_1day, accuracy_1day, X_test_1day, predictions_1day, probabilities_1day, X_latest = train_model(df, "Target_1Day")
-model_5day, accuracy_5day, X_test_5day, predictions_5day, probabilities_5day, _ = train_model(df, "Target_5Day")
+model_1day, accuracy_1day, X_test_1day, predictions_1day, probabilities_1day, X_latest = train_model(df, "Target_1Day", "models/random_forest_1day.pkl")
+model_5day, accuracy_5day, X_test_5day, predictions_5day, probabilities_5day, _ = train_model(df, "Target_5Day", "models/random_forest_5day.pkl")
+
+model_1day = model_1day.train(df, "Target_1Day")
+model_5day = model_5day.train(df, "Target_5Day")
 
 prediction_1day = model_1day.predict(X_latest)[0]                   # indexing array returned by model
 probability_1day = model_1day.predict_proba(X_latest)[0, 1]         # returns a 2d array. [0, 1] = first row, second col
