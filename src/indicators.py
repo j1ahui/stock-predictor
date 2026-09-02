@@ -1,10 +1,12 @@
-def add_indicators(df):
+import pandas 
 
-    """ technical indicators are extra calcs that help analyse trends and patterns in stock prices
+def add_indicators(df):
+    """
+    Technical indicators are extra calculations that help analyse trends and patterns in stock prices. 
     - useful for prediction models and trading analysis
 
     below, [] is used to access cols in a df
-    rolling(), mean() is a built in pandas method
+    rolling(), mean() are built-in pandas methods
     """
 
     # moving averages 
@@ -15,10 +17,12 @@ def add_indicators(df):
     df["Daily_Return"] = df["Close"].pct_change()   # pct = percentage change. calcs percentage incr/decr between rows. formula used: new_price - old_price/old_price
 
     # prediction target 
-    df["Target"] = (df["Close"].shift(-1) > df["Close"]).astype(int)    # 1 = stock goes up. 0 = stock goes down (created for a ml classification model)
+    df["Target_1Day"] = (df["Close"].shift(-1) > df["Close"]).astype(int)    # 1 = stock up. 0 = stock down (created for a ml classification model)
 
     # .shift(-1) = moves col up by 1 (compares tomorrows and todays closing)
     # astype converts boolean vals to ints (1, 0) - from [True, False] to [1, 0]
+
+    df["Target_5Day"] = (df["Close"].shift(-5) > df["Close"]).astype(int)
 
     # volume
     df["Volume_MA_10"] = df["Volume"].rolling(10).mean()
@@ -35,7 +39,10 @@ def add_indicators(df):
     df["Dist_MA_10"] = (df["Close"] - df["MA_10"]) / df["MA_10"]    # how far price is from MA_10
     df["Dist_MA_50"] = (df["Close"] - df["MA_50"]) / df["MA_50"]
 
+    print(df.head())
+
     return df   # returns modified df with new indicator col added
+
 
 def calc_rsi(df, window=14):
 
@@ -113,3 +120,4 @@ def calc_bollinger_bands(df, window=20):
     return df
 
 # if __name__ == "__main__":
+

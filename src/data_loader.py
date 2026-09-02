@@ -1,7 +1,11 @@
 import yfinance as yf   # yfinance lib
 
 def load_stock_dataset(ticker, period="2y"):    # ticker = stock symbol for wanted data. period = data length. example: load_stock_dataset("AAPL")
-    stock = yf.Ticker(ticker)   # stock object. this lines creates an object connected to that stock 
+    """
+    Loads stock data from Yahoo finance.
+    """
+    
+    stock = yf.Ticker(ticker)   # creating object. this lines creates an object connected to that stock 
 
     # print(dir(stock)) # displays attributes and methods for the object 
 
