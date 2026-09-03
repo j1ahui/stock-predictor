@@ -27,26 +27,74 @@ print(df.columns.tolist())
 print(df.head().to_string())            # pandas function displaying first few rows of DataFrame (commonly used to quickly inspect data and check that it loaded correctly)
 print(df.iloc[50:55].to_string())
 print(df.head(4))    # pandas function displaying first few rows of DataFrame (commonly used to quickly inspect data and check that it loaded correctly)
-"""
-
-df["Target"] = (df["Close"].shift(-1) > df["Close"]).astype(int)
-
-
-def run_random_forest(df: )
-
-model_1day, accuracy_1day, X_test_1day, predictions_1day, probabilities_1day, X_latest = train_model(df, "Target_1Day", "models/random_forest_1day.pkl")            # returns a RandomForestClassifier object (model_1day)
-model_5day, accuracy_5day, X_test_5day, predictions_5day, probabilities_5day, _ = train_model(df, "Target_5Day", "models/random_forest_5day.pkl")
-
-prediction_1day = model_1day.predict(X_latest)[0]                   # indexing array returned by model
-probability_1day = model_1day.predict_proba(X_latest)[0, 1]         # returns a 2d array. [0, 1] = first row, second col
-
-prediction_5day = model_5day.predict(X_latest)[0]
-probability_5day = model_5day.predict_proba(X_latest)[0, 1]
 
 print("MAIN DATA LENGTH:", len(df))
 print("MAIN DATA SHAPE:", df.shape)
 
-X_lstm, y_lstm, X_test, y_test, scaler = prepare_data(df)
-
 print("MAIN X:", X_lstm.shape)
 print("MAIN y:", y_lstm.shape)
+
+"""
+
+# df["Target"] = (df["Close"].shift(-1) > df["Close"]).astype(int)
+
+
+def run_random_forest(df: pd.DataFrame) -> dict:
+    """
+    Train Random Forest model and generate predictions
+    """
+
+    model_1day, accuracy_1day, X_test_1day, predictions_1day, probabilities_1day, X_latest = train_model(df, "Target_1Day", "models/random_forest_1day.pkl")            # returns a RandomForestClassifier object (model_1day)
+    model_5day, accuracy_5day, X_test_5day, predictions_5day, probabilities_5day, _ = train_model(df, "Target_5Day", "models/random_forest_5day.pkl")
+
+    prediction_1day = model_1day.predict(X_latest)[0]                   # indexing array returned by model
+    probability_1day = model_1day.predict_proba(X_latest)[0, 1]         # returns a 2d array. [0, 1] = first row, second col
+
+    prediction_5day = model_5day.predict(X_latest)[0]
+    probability_5day = model_5day.predict_proba(X_latest)[0, 1]
+
+    return {
+        "model_1day": model_1day,
+        "model_5day": model_5day,
+        "accuracy_1day": accuracy_1day,
+        "accuracy_5day": accuracy_5day,
+        "prediction_1day": prediction_1day,
+        "prediction_5day": prediction_5day,
+        "probability_1day": probability_1day,
+        "probability_5day": probability_5day,
+    }
+
+
+def run_lstm(df: pd.DataFrame) -> dict:
+    """
+    Train LSTM model and generate next-day prediction.
+    """
+    model, scaler, X_test, y_test = train_lstm(df)
+    prediction = predict_next(model, df, scaler)
+
+    return {
+        "model": model,
+        "scaler": scaler,
+        "X_test": X_test,
+        "y_test": y_test,
+        "prediction": prediction
+    }
+
+
+def main():
+    ticker = "AAPL"
+
+    df = prepare_stock_data(ticker)
+
+    rf_result = run_random_forest(df)
+    lstm_result = run_lstm(df)
+
+    print("Stock: ", ticker)
+    print("Random Forest 1-Day", rf_result["prediction_1day"])
+    print("Random Forest 5-day: ", rf_result["prediction_5day"])
+    print("LSTM: ", lstm_result["prediction"])
+
+
+if __name__ == "__main__":
+    main()
+
