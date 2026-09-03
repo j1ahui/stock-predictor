@@ -2,11 +2,13 @@ from sklearn.ensemble import RandomForestClassifier     # AI classification algo
 from sklearn.model_selection import train_test_split    
 from sklearn.metrics import accuracy_score              # measures prediction accuracy 
 
+import pandas as pd
+import numpy as np
 import joblib, os
 
 # train = teaches AI. test = evals AI
 
-def train_model(df, target_column, model_path):
+def train_model(df: pd.DataFrame, target_column: str, model_path: str) -> tuple[RandomForestClassifier, float, pd.DataFrame, np.ndarray, np.ndarray, pd.DataFrame]:                 # ndarray = N dimensional array
 
     df = df.dropna()                    # drops missing values 
 
