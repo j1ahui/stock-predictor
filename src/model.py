@@ -51,6 +51,15 @@ def train_model(df, target_column, model_path):
     # os.makedirs("models", exist_ok=True)                # creating a folder, saving trained model to my computer (prevents retraining)
     # joblib.dump(model, "models/random_forest.pkl")      # takes model and save to file (in string)
 
-    joblib.dump(model, model_path)
+    model_data = {
+        "model": model,
+        "accuracy": accuracy,
+        "X_test": X_test,
+        "predictions": predictions,
+        "probabilities": probabilities,
+
+    }
+
+    joblib.dump(model_data, model_path)
 
     return model, accuracy, X_test, predictions, probabilities, X_latest

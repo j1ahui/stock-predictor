@@ -2,6 +2,7 @@ import tensorflow as tf
 # tf.config.run_functions_eagerly(True)       # exec mode (eager vs graph)
 
 import numpy as np 
+import pandas as pd
 import os 
 import joblib
 
@@ -10,108 +11,114 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense 
 from tensorflow.keras import Input
 
-def prepare_data(df):
+WINDOW_SIZE = 60                                                # each prediction gets 60 days of history. creates new window each day you move forward (overlaps)
 
+def prepare_data(df: pd.DataFrame, test_size: int = 0.2, window_size=WINDOW_SIZE):
     """
-    prepares stock price data so ml can learn from previous days to predict following days 
+    Prepare stock price data allowing lstm to learn from previous days to predict following days.
+
+    Splits data into training and test splits.
+    Scales training data and creates windows of input and target data.
     """
-    
+
     data = df[["Close"]].dropna()
 
-    scaler = MinMaxScaler()                     # creates MinMaxScaler object. scaler converts vales into a range between 0 and 1. purpose is to make values smaller and consistent so ml can learn patterns more effectively 
-    scaled = scaler.fit_transform(data)         # learns min and max values and then transforms 
+    print("DATA LENGTH:", len(data))
+    print("DATA SHAPE:", data.shape)
 
-    X, y = [], []           # x = previous 60 days of prices (input data), y = next days price (target values)
+    split_idx = int(len(data) * (1 - test_size))
 
-    window_size = 60        # last 60 days, predict next day 
+    train_data = data.iloc[:split_idx]
+    test_data = data.iloc[split_idx:]
 
-    for i in range(window_size, len(scaled)):       
-        X.append(scaled[i-window_size:i, 0])        # NumPy slicing syntax. general slicing format is array[rows, cols] aka start:stop. i-window_size:i means from i-window_size to i. col 0 is the "Close" col 
-        y.append(scaled[i, 0])                      # adds next days value as target output 
+    scaler = MinMaxScaler()                             # creates object. scaler converts vales into a range between 0 and 1. purpose is to make values smaller and consistent so ml can learn patterns more effectively 
+    scaler.fit(train_data)                              
+    # scaled = scaler.fit_transform(data)                 # learns min and max values and then transforms !!!!! SCALER BEFORE SPLIT LEAK - scales min/max ceiling on all data, including test data.
+   
+    train_scaled = scaler.transform(train_data)
+    test_scaled = scaler.transform(pd.concat([train_data.iloc[-window_size:], test_data]))          # creates first window for first prediction. iloc[-window_size:] = last 60 rows
 
-    X, y = np.array(X), np.array(y)                 # converts python lists into numpy arrays 
+    def make_windows(scaled):
+        """
+        
+        """
+        X, y = [], []                                   # x = previous 60 days of prices (input data), y = next days price (target values)
 
-    # lstm layers require 3 dimensions (samples, time steps, features). reshape adds another dimension (features)
-    X = X.reshape((X.shape[0], X.shape[1], 1))      # X.shape returns the dimensions of the array
-    # [0] = samples, [1] = time steps (prev 60 days), final 1 = features (e.g "Close")
-    print(X.shape)
-    print(y.shape)
-    return X, y, scaler 
+        for i in range(window_size, len(scaled)):       
+            X.append(scaled[i-window_size:i, 0])        # NumPy slicing syntax. general slicing format is array[rows, cols] aka start:stop. i-window_size:i means from i-window_size to i. col 0 is the "Close" col 
+            y.append(scaled[i, 0])
+            # X: [day 2, day 3, day 4]
+            # y:  day 5
+        return np.array(X), np.array(y)                 # converts python lists into numpy arrays 
 
-def build_lstm():
+    X_train, y_train = make_windows(train_scaled)
+    X_test, y_test = make_windows(test_scaled)
 
-    model = Sequential()        # layers are added one after another
+    print("train_scaled:", train_scaled.shape)
+    print("test_scaled:", test_scaled.shape)            # adds 60 prev days to make first prediction
+    print("X_train:", X_train.shape)
+    print("y_train:", y_train.shape)
+    print("X_test:", X_test.shape)
+    print("y_test:", y_test.shape)
 
-    model.add(LSTM(50, return_sequences = True, input_shape = (60, 1)))     # passing arguments. layer 1. adds 50 LSTM units (neurons), pass full seq t next lstm layer (must stack), 60 timestamps (days) and 1 feature (close price)
-    model.add(LSTM(50))                                                     # layer 2. adds another 50 lstm units. outputs final learned representation
-    model.add(Dense(1))                                                     # dense = fully connected neural network layer. output layer. adds 1 output neuron. this predicts one val which is next stock price 
+    X_train = X_train.reshape((X_train.shape[0], X_train.shape[1], 1))      # [0] = samples, [1] = time steps (prev 60 days), final 1 = features (e.g "Close"). lstm layers require 3 dimensions (samples, time steps, features). reshape adds another dimension (features)
+    X_test = X_test.reshape((X_test.shape[0], X_test.shape[1], 1))
+    print(f"ANSWER!!!!! {X_train.shape}, {y_train.shape}")
 
-    model.compile(optimizer = "adam", loss = "mean_squared_error")          # adam = optimisation algo. "mean_squared_error" = measures prediction error
+    return X_train, y_train, X_test, y_test, scaler
+
+
+def build_lstm(window_size: int = WINDOW_SIZE):
+    """
+    Build a LSTM model for next day stock prediction.
+
+    Creates a two layer LSTM network followed by a dense output layer.
+
+    Args: 
+        window_size (int): number of previous days 
+    Returns: 
+        Sequential object: a compiled Keras LSTM model
+    """
+    model = Sequential()        #  sequential model object creation
+
+    model.add(LSTM(50, return_sequences=True, input_shape=(window_size, 1)))        # adding layers to object (add is a method). layer 1 adds 50 LSTM units (neurons), pass full seq to next lstm layer (must stack), 60 timestamps (days) and 1 feature (close price)
+    model.add(LSTM(50))                                                             # layer 2. adds another 50 lstm units. outputs final learned representation
+    model.add(Dense(1))                                                             # dense = fully connected neural network layer. output layer. adds 1 output neuron. this predicts one val (next stock price)
+
+    model.compile(optimizer ="adam", loss="mean_squared_error")                     # adam = optimisation algo. "mean_squared_error" = measures prediction error
 
     return model
 
-def train_lstm(df):
 
-    print("prep stage")
+def train_lstm(df: pd.DataFrame):
+    """
+    Train LSTM model.
 
-    X, y, scaler = prepare_data(df)
-
-    print("finsihed prep")
-
-    print("buildinggg")
-
+    Returns:
+        tuple: trained model, fitted scaler, test input data, test, target values
+    """
+    X_train, y_train, X_test, y_test, scaler = prepare_data(df)
     model = build_lstm()
+    model.fit(X_train, y_train, epochs = 10, batch_size = 32, verbose = 1)          # epoch = one complete pass through the entire training dataset (model learns a little more each epoch). batch_size = groups of 32 at a time 
+    
+    return model, scaler, X_test, y_test
 
-    print("starting fit")
 
-    # print(X.dtype)
-    # print(y.dtype)
-
-    # print(np.isnan(X).sum())
-    # print(np.isnan(y).sum())
-
-    # print(np.isinf(X).sum())
-    # print(np.isinf(y).sum())
-
-    model.fit(X, y, epochs = 10, batch_size = 32, verbose = 1)       # epoch = one complete pass through the entire training dataset (model learns a little more each epoch). batch_size = groups of 32 at a time 
-
-    print("finished fittt")
-
-    return model, scaler 
-
-def predict_next(model, df, scaler):
-
-    print("STEP 1")
-
-    data = df[["Close"]].values[-60:].astype("float32")             # .values converts to numpy array (by extracting raw numerical array) from pandas df 
-
-    print("STEP 2")
-
+def predict_next(model: Model, df: pd.DataFrame, scaler: MinMaxScaler, window_size: int = WINDOW_SIZE) -> float:
+    """
+    
+    """
+    data = df[["Close"]].values[-window_size:].astype("float32")             # .values converts to numpy array (by extracting raw numerical array) from pandas df 
     scaled = scaler.transform(data).astype("float32")
 
-    print("STEP 3")
-
-    X = scaled.reshape((1, 60, 1)).astype("float32")
-
-    print("STEP 4")
+    X = scaled.reshape((1, window_size, 1)).astype("float32")
 
     prediction = model(X, training = False).numpy()
-
-    # prediction = tf.convert_to_tensor(X)
-    # prediction = model(prediction, training=False)
-    # prediction = prediction.numpy()
-
-    print("STEP 5")
-
-    prediction = scaler.inverse_transform(prediction)
-
-    print("STEP 6")
-
+    prediction = scaler.inverse_transform(prediction)               # inverse_transform() converts scaled values back to og scale
     prediction = prediction[0, 0]
 
-    print("STEP 7")
-
     return float(prediction)
+
 
 def save(model, scaler):
 
@@ -120,27 +127,3 @@ def save(model, scaler):
     joblib.dump(scaler, "models/scaler.pkl")
 
     print("Model + scaler saved successfully")
-
-print(os.path.exists("models/lstm_model.keras"))
-print(os.path.exists("models/scaler.pkl"))
-
-
-if __name__ == "__main__":
-
-    # model = build_lstm()
-    # model.summary()
-
-    import yfinance as yf
-
-    df = yf.download("AAPL", period="2y")
-    prepare_data(df)
-    build_lstm()
-
-    model, scaler = train_lstm(df)
-
-    predict_next(model, df, scaler)
-
-    save(model, scaler)
-
-
-# source venv/bin/activate

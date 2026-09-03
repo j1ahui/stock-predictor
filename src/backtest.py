@@ -2,18 +2,20 @@ import numpy as np
 
 def generate_signals_rf(predictions, probabilities=None, threshold=0.6):
     """
-    threshold = minimum confidence to trigger a buy signal
-    default 0.6 = model must be 60% confidence to buy
-    if no probabilities passed, falls back to basic 0/1 predictions
+    Threshold = minimum confidence to trigger a buy signal.
+    Default 0.6 = model must be 60% confidence to signal buy.
+    
+    If no probabilities passed, falls back to basic 0/1 predictions.
     """
     if probabilities is not None:
         return(probabilities[:, 1] >= threshold).astype(int)        # numpy/pandas indexing 2d array. probabilities[:, 1] = take every row but only column no. 1
 
     return (predictions == 1).astype(int)
 
-def generate_signals_lstm(pred_prices, actual_prices):
 
+def generate_signals_lstm(pred_prices, actual_prices):
     return (pred_prices > actual_prices).astype(int)
+
 
 def backtest(df, signals):
 
@@ -40,6 +42,7 @@ def backtest(df, signals):
 
     return capital, np.array(pnl_history)
 
+
 def sharpe_ratio(returns, rf=0.0, periods_per_year=252):                # rf = risk free return per free. ppy = 252 trading days                                   
     """
     how much return you get for each unit of risk (reward vs risk)
@@ -56,7 +59,9 @@ def sharpe_ratio(returns, rf=0.0, periods_per_year=252):                # rf = r
 
     # returns = np.diff(pnl_history) / pnl_history[:-1]           # simplified version of sharpe .diff = calcs diff between consecutive elements. -1 slicing = take everything except last
 
+    
     return (mean * periods_per_year - rf) / (std * np.sqrt(periods_per_year))       # basically same as mean return / volatility 
+
 
 def max_drawdown(pnl):
     """
@@ -66,6 +71,7 @@ def max_drawdown(pnl):
     drawdown = pnl - peak
 
     return drawdown.min()
+
 
 def calc_volatilty(pnl_history, periods_per_year=252):
     """
@@ -80,16 +86,21 @@ def calc_volatilty(pnl_history, periods_per_year=252):
 
     return annualised_vol
 
+
 def calc_risk_score(pnl_history, periods_per_year=252):
     """
     risk score from 1-10 based on volatility, drawdown and sharpe ratio
     1 = very low risk
     10 = very high risk
     """
+    if len(pnl_history) < 2:
+        return None
+
+    returns = np.diff(pnl_history) / pnl_history[:-1]
 
     vol = calc_volatilty(pnl_history, periods_per_year=periods_per_year)
     drawdown = abs(max_drawdown(pnl_history)) / pnl_history[0]
-    sharpe = sharpe_ratio(pnl_history, periods_per_year=periods_per_year)        # rf not required as it defaults to 0.0. P_P_P is also optional as it defaults to 252
+    sharpe = sharpe_ratio(returns, periods_per_year=periods_per_year)        # rf not required as it defaults to 0.0. P_P_P is also optional as it defaults to 252
 
     vol_score = min(vol * 20, 10)                               # calc vol * 20, but never let it exceed 10 (score is capped at 10). high vol = high risk 
     drawdown_score = min(drawdown * 20, 10)                     # high drawdown = high risk

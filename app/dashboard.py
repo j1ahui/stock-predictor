@@ -136,6 +136,8 @@ if ticker and model_type:
 # ----------------- LOAD DATA  -----------------
 
 df = load_stock_dataset(ticker)
+
+st.write(df.tail())
 df = add_indicators(df)
 df = calc_rsi(df)
 df = calc_macd(df)
@@ -277,41 +279,36 @@ elif selected == "Indicators":
 
 elif selected == "Predictions": 
 
-    st.subheader("Predictions")
-
     current_price = df["Close"].iloc[-1]
 
-    st.write("Current Price: ", round(float(current_price), 2))
-
     if model_type == "Random Forest":
-        model_path = "models/random_forest.pkl"
-
-        if os.path.exists(model_path):
-            model = joblib.load(model_path)
-            _, accuracy, X_test, predictions, probabilities, X_latest = train_model(df, target_column="Target_1Day", model_path="models/random_forest_1day.pkl")
-
-        else:
-            model_1day, accuracy_1dat, X_test_1day, predictions_1day, probabilities_1day, X_latest = train_model(df, "Target_1Day")
         
         st.subheader("Model Predictions - Random Forest")
 
-        model_1day = joblib.load("models/random_forest_1day.pkl")
+        model_data = joblib.load("models/random_forest_1day.pkl")
+        model_1day = model_data["model"]
+        accuracy_1day = model_data["accuracy"]
+        X_test_1day = model_data["X_test"]
+        predictions_1day = model_data["predictions"]
+        probabilities_1day = model_data["probabilities"]
 
-        X_latest = df[["MA_10", "MA_50", "Daily_Return", "Volume_Ratio", "Volatility", "Momentum_5", "Momentum_10", "Dist_MA_10", "Dist_MA_50", "RSI", "MACD"]].iloc[-1:]
+        features = ["MA_10", "MA_50", "Daily_Return", "Volume_Ratio", "Volatility", "Momentum_5", "Momentum_10", "Dist_MA_10", "Dist_MA_50", "RSI", "MACD"]
+        
+        X_latest = df[features].iloc[-1:]
 
-        st.write("Current Price", round(current_price, 2))
+        st.write("Current Price:", round(current_price, 2))
 
-        predictions_1day = model_1day.predict(X_latest)[0]
-        probabilities_1day = model_1day.predict_proba(X_latest)[0, 1]
+        prediction_1day = model_1day.predict(X_latest)[0]
+        probability_1day = model_1day.predict_proba(X_latest)[0, 1]
 
-        st.write("1-Day Prediction: ", "UP" if predictions_1day == 1 else "DOWN")
-        st.write("Probaility of UP: ", round(probabilities_1day * 100, 2), "%")
-        st.write("Model Accuracy; ", round(accuracy * 100, 2), "%")
+        st.write("1-Day Prediction: ", "UP" if prediction_1day == 1 else "DOWN")
+        st.write("Probability of UP: ", round(probability_1day * 100, 2), "%")
+        st.write("Model Accuracy: ", round(accuracy_1day * 100, 2), "%")
 
         # ----------------- ACTUAL VS PREDICTED GRAPH  -----------------
 
-        df_test = df.loc[X_test.index].copy()         # creates a copy of test rows 
-        df_test["Predicted"] = predictions
+        df_test = df.loc[X_test_1day.index].copy()         # creates a copy of test rows 
+        df_test["Predicted"] = predictions_1day
 
         df_test["Predicted_Price"] = df_test["Close"].where(            # creates col based on condition
             df_test["Predicted"] == 1,                # use this line if condition true
@@ -347,17 +344,16 @@ elif selected == "Predictions":
 
         # ----------------- BACKTEST  -----------------
 
-
-        signals = generate_signals_rf(predictions, probabilities, threshold=0.6)
+        signals = generate_signals_rf(predictions_1day, probabilities_1day, threshold=0.6)
 
         final_capital, pnl_history = backtest(
-            df.loc[X_test.index].reset_index(drop=True),
+            df.loc[X_test_1day.index].reset_index(drop=True),
             signals
         )
 
         st.subheader("Backtest Results")
         st.write("Starting Capital: $10,000")
-        st.write("Final Capital: $", round(final_capital), 2)
+        st.write("Final Capital: $", round(final_capital, 2))
         st.write("Sharpe Ratio", round(sharpe_ratio(pnl_history, rf=0.0), 4))
         st.write("Max Drawdown: $", round(max_drawdown(pnl_history), 2))
 
@@ -458,9 +454,6 @@ elif selected == "Predictions":
         st.write("Median Case (50th): $", round(np.percentile(simulations[:, -1], 50), 2))
         st.write("Worst Case (5th): $", round(np.percentile(simulations[:, -1], 5),2))
 
-
-
-
     # ------------------------
 
     elif model_type == "LSTM":
@@ -480,7 +473,7 @@ elif selected == "Predictions":
         # st.write("BEFORE PREDICT")
         prediction = predict_next(model, df_clean, scaler)         # model, df, scaler are required as parameters for function arguments 
         # st.write("AFTER PREDICT")
-        st.write("Predicted Price:", prediction)        
+        st.write("Predicted Price:", round(prediction, 2))    
 
         current_price = df["Close"].iloc[-1]
         st.write("Current Price: ", round(current_price, 2))
@@ -496,8 +489,12 @@ elif selected == "Predictions":
         st.write("Percentage Change:", round(float(percentage_change), 2), "%")
 
         # ----------------- ACTUAL VS PREDICTED GRAPH  -----------------
+        st.write("df_clean shape:", df_clean.shape)
+        st.write("df_clean length:", len(df_clean))
 
-        X_lstm, y_lstm, scaler_check = prepare_data(df_clean)
+        X_lstm, y_lstm, _, _, scaler_check,  = prepare_data(df_clean)
+        st.write("X_lstm shape:", X_lstm.shape)
+        st.write("y_lstm shape:", y_lstm.shape)
         X_lstm = X_lstm.astype("float32")        
         lstm_preds = model(X_lstm, training=False).numpy()
         lstm_preds = scaler.inverse_transform(lstm_preds)
@@ -542,7 +539,7 @@ elif selected == "Predictions":
         st.subheader("Backtest Results")
         st.write("Starting Capital: $10,000")
         st.write("Final Capital: ", round(float(final_capital), 2))
-        st.write("Sharpe Ratio: ", round(sharpe_ratio(pnl_history), 4))
+        st.write("Sharpe Ratio: ", round(sharpe_ratio(pnl_history), 2))
         st.write("Max Drawdown: $", round(max_drawdown(pnl_history), 2))
 
         risk_score = calc_risk_score(pnl_history)
