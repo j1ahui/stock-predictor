@@ -1,22 +1,15 @@
 import yfinance as yf   # yfinance lib
+import pandas as pd 
 
-def load_stock_dataset(ticker, period="2y"):    # ticker = stock symbol for wanted data. period = data length. example: load_stock_dataset("AAPL")
+def load_stock_dataset(ticker: str, period: int = "2y") -> pd.DataFrame:    # ticker = stock symbol for wanted data. period = data length. example: load_stock_dataset("AAPL")
     """
     Loads stock data from Yahoo finance.
+
+    yfinance creates DataFrame instead of having to manually use pandas lib.
     """
-    
-    stock = yf.Ticker(ticker)   # creating object. this lines creates an object connected to that stock 
+    stock = yf.Ticker(ticker)                           # creating object. this lines creates an object connected to that stock 
 
-    # print(dir(stock)) # displays attributes and methods for the object 
-
-    # stock.    # dropdown shows available methods (methods are attached to objects)
-
-    # help(stock.history)
-
-    # df = data frame (a table structure from pandas library which is a python lib for data in tables). pandas help with storing, organising, cleaning, analysing data
-
-    # yfinance creates DataFrame instead of having to manually use pandas lib
-    df = stock.history(period=period)   # history method downloads stock price data. history() uses pandas internally to create a dataframe. can use dataframe methods because df is already a dataframe 
+    df = stock.history(period=period)                   # returns the pandas df. history method downloads stock price data. history() uses pandas internally to create a dataframe. can use dataframe methods because df is already a dataframe 
 
     return df 
 
@@ -32,3 +25,11 @@ pandas - stores and analyses the data
 #     data = ...
 #     df = pd.DataFrame(data)
 #     return df
+
+# print(dir(stock)) # displays attributes and methods for the object 
+
+# stock.    # dropdown shows available methods (methods are attached to objects)
+
+# help(stock.history)
+
+# df = data frame (a table structure from pandas library which is a python lib for data in tables). pandas help with storing, organising, cleaning, analysing data

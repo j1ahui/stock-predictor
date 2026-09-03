@@ -120,7 +120,7 @@ def predict_next(model: Model, df: pd.DataFrame, scaler: MinMaxScaler, window_si
     return float(prediction)
 
 
-def save(model, scaler):
+def save(model: Model, scaler: MinMaxScaler) -> None:
 
     os.makedirs("models", exist_ok = True)
     model.save("models/lstm_model.keras")
