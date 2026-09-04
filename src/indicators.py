@@ -1,6 +1,6 @@
-import pandas 
+import pandas as pd
 
-def add_indicators(df):
+def add_indicators(df: pd.DataFrame) -> pd.DataFrame:
     """
     Technical indicators are extra calculations that help analyse trends and patterns in stock prices. 
     - useful for prediction models and trading analysis
@@ -44,7 +44,7 @@ def add_indicators(df):
     return df   # returns modified df with new indicator col added
 
 
-def calc_rsi(df, window=14):
+def calc_rsi(df: pd.DataFrame, window: int = 14):
 
     """
     measure whether a stock is overbought (price may fall soon) or oversold (price may rise soon)
@@ -68,7 +68,7 @@ def calc_rsi(df, window=14):
 
     return df 
 
-def calc_macd(df):      
+def calc_macd(df: pd.DataFrame):      
 
     """
     moving avg convergence divergence
