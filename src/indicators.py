@@ -72,7 +72,7 @@ def calc_macd(df: pd.DataFrame) -> pd.DataFrame:
     compares two moving averages 
 
     MACD > signal line = bullish trend
-    MACD > signal line = bearish trend 
+    MACD < signal line = bearish trend 
     """
     ema12 = df["Close"].ewm(span=12).mean()                 # ema = exponential moving avg (ema gives more importance to recent prices). ewm = exponential weighted moving 
     ema26 = df["Close"].ewm(span=26).mean()

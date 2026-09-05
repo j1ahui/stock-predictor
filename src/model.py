@@ -1,6 +1,6 @@
 from sklearn.ensemble import RandomForestClassifier     # AI classification algo imported from py lib used for ml 
 from sklearn.model_selection import train_test_split    
-from sklearn.metrics import accuracy_score              # measures prediction accuracy 
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score             # measures prediction accuracy 
 
 import pandas as pd
 import numpy as np
@@ -8,28 +8,27 @@ import joblib, os
 
 # train = teaches AI. test = evals AI
 
+FEATURES = [                        # input features (col names). gives model multiple indicators describing current state of stock
+    "MA_10",
+    "MA_50",
+    "Daily_Return",
+    "Volume_Ratio",
+    "Volatility",
+    "Momentum_5",
+    "Momentum_10",
+    "Dist_MA_10",
+    "Dist_MA_50",
+    "RSI",
+    "MACD",
+]
+
 def train_model(df: pd.DataFrame, target_column: str, model_path: str) -> tuple[RandomForestClassifier, float, pd.DataFrame, np.ndarray, np.ndarray, pd.DataFrame]:                 # ndarray = N dimensional array
 
-    df = df.dropna()                    # drops missing values 
+    df = df.dropna().copy()                     # drops missing values 
 
-    features = [                        # input features (col names). gives model multiple indicators describing current state of stock
-        "MA_10",
-        "MA_50",
-        "Daily_Return",
-        "Volume_Ratio",
-        "Volatility",
-        "Momentum_5",
-        "Momentum_10",
-        "Dist_MA_10",
-        "Dist_MA_50",
-        "RSI",
-        "MACD",
+    X = df[FEATURES]                            # X = inputs in ML ("from df, select [item] in features"). X = NEW DATAFRAME !!!!
 
-    ]
-
-    X = df[features]    # X = inputs in ML ("from df, select [item] in features"). X = NEW DATAFRAME !!!!
-
-    y = df[target_column]    # y = outputs (contains correct answers/labels)
+    y = df[target_column]                       # y = outputs (contains correct answers/labels)
 
     X_train, X_test, y_train, y_test = train_test_split(
         X,
@@ -45,10 +44,17 @@ def train_model(df: pd.DataFrame, target_column: str, model_path: str) -> tuple[
     predictions = model.predict(X_test)                                  # predicting unseen data 
     probabilities = model.predict_proba(X_test)                          # [[0.27, 0.73]] - 27% down, 73% up
 
-    accuracy = accuracy_score(y_test, predictions)      # calc accuracy. compares real answers (y_test) and forest predictions
+    metrics = {
+        "accuracy": accuracy_score(y_test, predictions),                 # calc accuracy. compares real answers (y_test) and forest predictions
+        "precision": precision_score(y_test, predictions),
+        "recall": recall_score(y_test, predictions),
+        "f1": f1_score(y_test, predictions),
+        "roc_auc": roc_auc_score(y_test, probabilities[:, 1])
+    
+    }
 
     latest = df.dropna().iloc[-1:]                      # models prediction for stock as of right now
-    X_latest = latest[features]
+    X_latest = latest[FEATURES]
 
     # os.makedirs("models", exist_ok=True)                # creating a folder, saving trained model to my computer (prevents retraining)
     # joblib.dump(model, "models/random_forest.pkl")      # takes model and save to file (in string)
@@ -64,4 +70,4 @@ def train_model(df: pd.DataFrame, target_column: str, model_path: str) -> tuple[
 
     joblib.dump(model_data, model_path)
 
-    return model, accuracy, X_test, predictions, probabilities, X_latest
+    return model, metrics, X_test, predictions, probabilities, X_latest
