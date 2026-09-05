@@ -8,7 +8,6 @@ def add_indicators(df: pd.DataFrame) -> pd.DataFrame:
     below, [] is used to access cols in a df
     rolling(), mean() are built-in pandas methods
     """
-
     # moving averages 
     df["MA_10"] = df["Close"].rolling(10).mean()    # 10 day moving average. creates a sliding 10-day window (looks at 10 rows at a time - e.g days 1-10, 2-11)
     df["MA_50"] = df["Close"].rolling(50).mean()
@@ -44,15 +43,13 @@ def add_indicators(df: pd.DataFrame) -> pd.DataFrame:
     return df   # returns modified df with new indicator col added
 
 
-def calc_rsi(df: pd.DataFrame, window: int = 14):
-
+def calc_rsi(df: pd.DataFrame, window: int = 14) -> pd.DataFrame:
     """
-    measure whether a stock is overbought (price may fall soon) or oversold (price may rise soon)
+    Measure whether a stock is overbought (price may fall soon) or oversold (price may rise soon).
     RSI > 70 = overbought
     RSI < 30 = oversold 
     """
-
-    delta = df["Close"].diff()              # delta = change in value. value changes between consecutive closing prices (output: 5, -2). pos values -> stock went up
+    delta = df["Close"].diff()              # delta = change in value. value changes between consecutive closing prices (output: 5, -2). pos value -> stock went up
 
     gain = delta.where(delta > 0, 0)        # extracting gains by keeps pos changes, neg values become 0
     loss = -delta.where(delta < 0, 0)       # extracting losses by converting losses into pos values. - cancels out - value to turn into pos (treated as pos magnitudes)
@@ -64,36 +61,33 @@ def calc_rsi(df: pd.DataFrame, window: int = 14):
 
     rsi = 100 - (100 / (1 + rs))
 
-    df["RSI"] = rsi             # new df col 
+    df["RSI"] = rsi                         # new df col 
 
     return df 
 
-def calc_macd(df: pd.DataFrame):      
 
+def calc_macd(df: pd.DataFrame) -> pd.DataFrame:      
     """
-    moving avg convergence divergence
-    identifies trends, momentum, possible buy/sell signals
+    Moving avg convergence divergence, identifies trends, momentum, possible buy/sell signals
     compares two moving averages 
 
     MACD > signal line = bullish trend
     MACD > signal line = bearish trend 
     """
-
-    ema12 = df["Close"].ewm(span=12).mean()         # ema = exponential moving avg (ema gives more importance to recent prices). ewm = exponential weighted moving 
+    ema12 = df["Close"].ewm(span=12).mean()                 # ema = exponential moving avg (ema gives more importance to recent prices). ewm = exponential weighted moving 
     ema26 = df["Close"].ewm(span=26).mean()
 
-    df["MACD"] = ema12 - ema26                  # 12 day reacts quickly to price changes, 26 days react more slowly (difference helps identify trend direction and momentum)
+    df["MACD"] = ema12 - ema26                              # 12 day reacts quickly to price changes, 26 days react more slowly (difference helps identify trend direction and momentum)
 
     df["Signal_Line"] = df["MACD"].ewm(span=9).mean()       # smooths MACD line to make trend signals easier to see 
 
     return df 
 
-def create_trade_signals(df):
 
+def create_trade_signals(df: pd.DataFrame) -> pd.DataFrame:
     """
-    generate buy or sell signals based on indicators
+    Generate buy or sell signals based on indicators.
     """
-
     df["Buy_Signal"] = (
         (df["MACD"] > df["Signal_Line"]) &
         (df["RSI"] < 70)
@@ -106,11 +100,12 @@ def create_trade_signals(df):
 
     return df
 
-def calc_bollinger_bands(df, window=20):
+
+def calc_bollinger_bands(df: pd.DataFrame, window: int = 20) -> pd.DataFrame:
     """
-    measure volatility around ma
-    price near upper band = potentially overbought
-    price near lower band = potentially oversold 
+    Measure volatility around ma.
+    Price near upper band = potentially overbought.
+    Price near lower band = potentially oversold. 
     """
     df["BB_Middle"] = df["Close"].rolling(window).mean()
     std = df["Close"].rolling(window).std()                     # std of closing price
@@ -118,6 +113,4 @@ def calc_bollinger_bands(df, window=20):
     df["BB_Lower"] = df["BB_Middle"] - (2*std)
 
     return df
-
-# if __name__ == "__main__":
 
