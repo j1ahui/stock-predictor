@@ -287,6 +287,7 @@ elif selected == "Predictions":
 
         model_data = joblib.load("models/random_forest_1day.pkl")
         model_1day = model_data["model"]
+        metrics = model_data["metrics"]
         accuracy_1day = model_data["accuracy"]
         X_test_1day = model_data["X_test"]
         predictions_1day = model_data["predictions"]
@@ -304,6 +305,9 @@ elif selected == "Predictions":
         st.write("1-Day Prediction: ", "UP" if prediction_1day == 1 else "DOWN")
         st.write("Probability of UP: ", round(probability_1day * 100, 2), "%")
         st.write("Model Accuracy: ", round(accuracy_1day * 100, 2), "%")
+
+        cols = st.columns(5)
+        cols[0].metric("Accuracy", f"{model_data['accuracy']:.2%}")
 
         # ----------------- ACTUAL VS PREDICTED GRAPH  -----------------
 

@@ -1,9 +1,10 @@
 from sklearn.ensemble import RandomForestClassifier     # AI classification algo imported from py lib used for ml 
 from sklearn.model_selection import train_test_split    
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score             # measures prediction accuracy 
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score             # evaluation functions
+from sklearn.dummy import DummyClassifier               # .dummy is submodule/package 
 
 import pandas as pd
-import numpy as np
+import numpy as np  
 import joblib, os
 
 # train = teaches AI. test = evals AI
@@ -22,7 +23,7 @@ FEATURES = [                        # input features (col names). gives model mu
     "MACD",
 ]
 
-def train_model(df: pd.DataFrame, target_column: str, model_path: str) -> tuple[RandomForestClassifier, float, pd.DataFrame, np.ndarray, np.ndarray, pd.DataFrame]:                 # ndarray = N dimensional array
+def train_model(df: pd.DataFrame, target_column: str, model_path: str) -> tuple[RandomForestClassifier, dict, pd.DataFrame, np.ndarray, np.ndarray, pd.DataFrame]:                 # ndarray = N dimensional array
 
     df = df.dropna().copy()                     # drops missing values 
 
@@ -30,12 +31,17 @@ def train_model(df: pd.DataFrame, target_column: str, model_path: str) -> tuple[
 
     y = df[target_column]                       # y = outputs (contains correct answers/labels)
 
-    X_train, X_test, y_train, y_test = train_test_split(
+    X_train, X_test, y_train, y_test = train_test_split(            # out of sample testing (how well does model perform on data it has never seen before)
         X,
         y,
         test_size=0.2,      # 80% training data, 20% testing data 
         shuffle=False       # order matters for market/time series data
     )
+
+    baseline = DummyClassifier(strategy="most_frequent")                 # creating object (baseline - creates a very simple model that doesnt actually learn meaningful relationships between features and stock movements). most_frequent = always predict whichever class appeared most frequently
+    baseline.fit(X_train, y_train)
+    baseline_predictions = baseline.predict(X_test)                      # baseline_predictions returns an array of predictions [1, 1, 1 ..]
+    baseline_accuracy = accuracy_score(y_test, baseline_predictions)
 
     model = RandomForestClassifier(n_estimators=200, random_state=67)    # random forest = collection of many decision trees. each tree makes a prediction (up or down). forest uses majority vote 
 
@@ -45,15 +51,20 @@ def train_model(df: pd.DataFrame, target_column: str, model_path: str) -> tuple[
     probabilities = model.predict_proba(X_test)                          # [[0.27, 0.73]] - 27% down, 73% up
 
     metrics = {
-        "accuracy": accuracy_score(y_test, predictions),                 # calc accuracy. compares real answers (y_test) and forest predictions
-        "precision": precision_score(y_test, predictions),
-        "recall": recall_score(y_test, predictions),
-        "f1": f1_score(y_test, predictions),
-        "roc_auc": roc_auc_score(y_test, probabilities[:, 1])
+        "accuracy": accuracy_score(y_test, predictions),                 # calc accuracy. compares real answers (y_test) and forest predictions. measures what percentage of predictions were correct
+        "precision": precision_score(y_test, predictions),               # measures when model predicted up, how often was it actually up?
+        "recall": recall_score(y_test, predictions),                     # measures when stock was up, how many did model identify correctly?
+        "f1": f1_score(y_test, predictions),                             # combines precision and recall into one score  
+        "roc_auc": roc_auc_score(y_test, probabilities[:, 1]),           # evaluates how well the model can distinguish between two classes across different probability thresholds
     
     }
 
-    latest = df.dropna().iloc[-1:]                      # models prediction for stock as of right now
+    improvement = (metrics["accuracy"] - baseline_accuracy)
+
+    metrics["baseline_accuracy"] = baseline_accuracy
+    metrics["baseline_improvement"] = improvement
+
+    latest = df.iloc[-1:]                      # models prediction for stock as of right now
     X_latest = latest[FEATURES]
 
     # os.makedirs("models", exist_ok=True)                # creating a folder, saving trained model to my computer (prevents retraining)
@@ -61,7 +72,8 @@ def train_model(df: pd.DataFrame, target_column: str, model_path: str) -> tuple[
 
     model_data = {
         "model": model,
-        "accuracy": accuracy,
+        "metrics": metrics,
+        "accuracy": metrics["accuracy"],
         "X_test": X_test,
         "predictions": predictions,
         "probabilities": probabilities,

@@ -7,7 +7,7 @@ import os
 import joblib
 
 from sklearn.preprocessing import MinMaxScaler
-from tensorflow.keras.models import Sequential
+from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.layers import LSTM, Dense 
 from tensorflow.keras import Input
 
@@ -104,7 +104,7 @@ def train_lstm(df: pd.DataFrame):
     return model, scaler, X_test, y_test
 
 
-def predict_next(model: Model, df: pd.DataFrame, scaler: MinMaxScaler, window_size: int = WINDOW_SIZE) -> float:
+def predict_next(model: Sequential, df: pd.DataFrame, scaler: MinMaxScaler, window_size: int = WINDOW_SIZE) -> float:
     """
     
     """
