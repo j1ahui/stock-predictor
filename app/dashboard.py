@@ -306,8 +306,25 @@ elif selected == "Predictions":
         st.write("Probability of UP: ", round(probability_1day * 100, 2), "%")
         st.write("Model Accuracy: ", round(accuracy_1day * 100, 2), "%")
 
+        st.markdown("""
+            <style>
+            [data-testid="stMetricValue"] {
+                font-size: 15px;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+
         cols = st.columns(5)
         cols[0].metric("Accuracy", f"{model_data['accuracy']:.2%}")
+        cols[1].metric("Precision", f"{metrics['precision']:.2%}")
+        cols[2].metric("Recall", f"{metrics['recall']:.2%}")
+        cols[3].metric("F1", f"{metrics['f1']:.2%}")
+        cols[4].metric("ROC-AUC", f"{metrics['roc_auc']:.2%}")
+
+        improvement = (metrics["accuracy"] - metrics["baseline_accuracy"])
+
+        st.write(f"Naive baseline: {metrics["baseline_accuracy"]:.2%}")
+        st.write(f"Improvement over baseline: {improvement:.2%} percentage points")
 
         # ----------------- ACTUAL VS PREDICTED GRAPH  -----------------
 

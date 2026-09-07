@@ -1,16 +1,29 @@
 import numpy as np 
 
-def generate_signals_rf(predictions, probabilities=None, threshold=0.6):
+def generate_signals_rf(predictions: np.ndarray, probabilities: np.ndarray | None = None, threshold: float = 0.6) -> np.ndarray:
     """
+    Generate BUY, HOLD, SELL signals based on model confidence.
+
+    1 = BUY/LONG (<60%)
+    0 = HOLD (40-60%)
+    -1 = SELL / SHORT (>40%) 
+
     Threshold = minimum confidence to trigger a buy signal.
     Default 0.6 = model must be 60% confidence to signal buy.
     
     If no probabilities passed, falls back to basic 0/1 predictions.
     """
     if probabilities is not None:
-        return(probabilities[:, 1] >= threshold).astype(int)        # numpy/pandas indexing 2d array. probabilities[:, 1] = take every row but only column no. 1
+        p_up = probabilities[:, 1]                    # numpy/pandas indexing 2d array. probabilities[:, 1] = take every row but only column no. 1
 
-    return (predictions == 1).astype(int)
+        signals = np.zeros(len(p_up))
+
+        signals[p_up >= threshold] = 1
+        signals[p_up <= (1 - threshold)] = -1
+
+        return signals
+
+    return np.where(predictions == 1, 1, -1)
 
 
 def generate_signals_lstm(pred_prices, actual_prices):
