@@ -5,6 +5,7 @@ from src.data_loader import load_stock_dataset
 from src.indicators import add_indicators, calc_rsi, calc_macd, create_trade_signals, calc_bollinger_bands
 from src.model import train_model
 from src.lstm_model import prepare_data, train_lstm, predict_next
+from src.regression_model import train_regression
 
 
 def prepare_stock_data(ticker: str) -> pd.DataFrame:              # "AAPL", "TSLA"
@@ -43,7 +44,6 @@ def run_random_forest(df: pd.DataFrame) -> dict:
     """
     Train Random Forest model and generate predictions
     """
-
     model_1day, accuracy_1day, X_test_1day, predictions_1day, probabilities_1day, X_latest = train_model(df, "Target_1Day", "models/random_forest_1day.pkl")            # returns a RandomForestClassifier object (model_1day)
     model_5day, accuracy_5day, X_test_5day, predictions_5day, probabilities_5day, _ = train_model(df, "Target_5Day", "models/random_forest_5day.pkl")
 
@@ -78,6 +78,19 @@ def run_lstm(df: pd.DataFrame) -> dict:
         "X_test": X_test,
         "y_test": y_test,
         "prediction": prediction
+    }
+
+
+def run_regression(df: pd.DataFrame) -> dict:
+    """
+    Train regression model and predict price in 5 days.
+    """
+    model, predictions, metrics = train_regression(df, "Target_5Day_Price", "models/random_forest_regression_5day.pkl")
+
+    return {
+        "model": model,
+        "predictions": predictions,
+        "metrics": metrics
     }
 
 
