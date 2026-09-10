@@ -21,7 +21,10 @@ def add_indicators(df: pd.DataFrame) -> pd.DataFrame:
     # .shift(-1) = moves col up by 1 (compares tomorrows and todays closing)
     # astype converts boolean vals to ints (1, 0) - from [True, False] to [1, 0]
 
-    df["Target_5Day"] = (df["Close"].shift(-5) > df["Close"]).astype(int)
+    df["Target_5Day"] = (df["Close"].shift(-5) > df["Close"]).astype(int)       # classification
+
+    df["Target_1Day_Price"] = (df["Close"].shift(-1))                           # regression
+    df["Target_5Day_Price"] = (df["Close"].shift(-5))                           # regression
 
     # volume
     df["Volume_MA_10"] = df["Volume"].rolling(10).mean()
