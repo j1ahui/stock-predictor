@@ -84,9 +84,7 @@ def build_lstm(window_size: int = WINDOW_SIZE):
     Returns: 
         Sequential object: a compiled Keras LSTM model
     """
-    print("1")
     model = Sequential()        #  sequential model object creation
-    print("seq created")
     model.add(Input(shape=(window_size, 1)))
     model.add(LSTM(50, return_sequences=True))        # adding layers to object (add is a method). layer 1 adds 50 LSTM units (neurons), pass full seq to next lstm layer (must stack), 60 timestamps (days) and 1 feature (close price)
     print("first lstm added")
@@ -106,7 +104,6 @@ def train_lstm(df: pd.DataFrame):
     Returns:
         tuple: trained model, fitted scaler, test input data, test, target values
     """
-    print("2")
     X_train, y_train, X_test, y_test, scaler = prepare_data(df)
     model = build_lstm()
     model.fit(X_train, y_train, epochs = 10, batch_size = 32, verbose = 1)          # epoch = one complete pass through the entire training dataset (model learns a little more each epoch). batch_size = groups of 32 at a time 
@@ -130,6 +127,18 @@ def predict_next(model: Sequential, df: pd.DataFrame, scaler: MinMaxScaler, wind
     prediction = prediction[0, 0]
 
     return float(prediction)
+
+
+def predict_5day(model, X_test, y_test, scaler):
+    predictions = model.predict(X_test, verbose=0)                          # verbose = terminal progress output
+
+    y_test_unscaled = scaler.inverse_transform(y_test.reshape(-1, 1))
+
+    predictions_unscaled = scaler.inverse_transform(predictions)
+
+    evaluation = evaluate_errors(y_test_unscaled, predictions_unscaled)
+
+    return predictions_unscaled, evaluation
 
 
 def evaluate_errors(y_test, predictions):
