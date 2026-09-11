@@ -1,5 +1,4 @@
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 
@@ -41,9 +40,9 @@ def train_regression(df: pd.DataFrame, target_column: str, model_path: str) -> t
     model.fit(X_train, y_train)
     predictions = model.predict(X_test)
 
-    mae = mean_absolute_error(y_test, predictions)
-    rmse = mean_squared_error(y_test, predictions) ** 0.5
-    r2 = r2_score(y_test, predictions)
+    mae = mean_absolute_error(y_test, predictions)                      # calculates average absolute error (uses absolute values)
+    rmse = mean_squared_error(y_test, predictions) ** 0.5               # calcs average error (squares errors first) but sensitive to large differences
+    r2 = r2_score(y_test, predictions)                                  # displays variation between actual and predicted prices (0-1 scale where 1 conveys perfect predictions. 0.8 = explains ~80% of variation)
 
     evaluation = {
         "MAE": mae,

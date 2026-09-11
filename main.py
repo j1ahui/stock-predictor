@@ -1,11 +1,15 @@
+import faulthandler, signal
+faulthandler.register(signal.SIGUSR1)
+
 import joblib
 import pandas as pd
 
 from src.data_loader import load_stock_dataset
 from src.indicators import add_indicators, calc_rsi, calc_macd, create_trade_signals, calc_bollinger_bands
 from src.model import train_model
-from src.lstm_model import prepare_data, train_lstm, predict_next
+from src.lstm_model import prepare_data, train_lstm, predict_next, evaluate_errors
 from src.regression_model import train_regression
+from src.linear_regression import train_linear
 
 
 def prepare_stock_data(ticker: str) -> pd.DataFrame:              # "AAPL", "TSLA"
@@ -71,13 +75,15 @@ def run_lstm(df: pd.DataFrame) -> dict:
     """
     model, scaler, X_test, y_test = train_lstm(df)
     prediction = predict_next(model, df, scaler)
+    evaluation = evaluate_errors(y_test, prediction)
 
     return {
         "model": model,
         "scaler": scaler,
         "X_test": X_test,
         "y_test": y_test,
-        "prediction": prediction
+        "prediction": prediction,
+        "evaluation": evaluation,
     }
 
 
@@ -94,6 +100,19 @@ def run_regression(df: pd.DataFrame) -> dict:
     }
 
 
+def run_linear(df: pd.DataFrame) -> dict:
+    """
+    Train linear regression model and predict price in 5 days.
+    """
+    model, predictions, metrics = train_linear(df, "Target_5Day_Price", "models/linear_regression_5day.pkl")
+
+    return {
+        "model": model,
+        "predictions": predictions,
+        "metrics": metrics
+    }
+
+
 def main():
     ticker = "AAPL"
 
@@ -101,11 +120,15 @@ def main():
 
     rf_result = run_random_forest(df)
     lstm_result = run_lstm(df)
+    rf_regression_result = run_regression(df)
+    linear_regression = run_linear(df)
 
     print("Stock: ", ticker)
     print("Random Forest 1-Day", rf_result["prediction_1day"])
     print("Random Forest 5-day: ", rf_result["prediction_5day"])
     print("LSTM: ", lstm_result["prediction"])
+    print("Random Forest Regression: ", rf_regression_result["predictions"])
+    print("Linear Regression: ", linear_regression["predictions"])
 
 
 if __name__ == "__main__":

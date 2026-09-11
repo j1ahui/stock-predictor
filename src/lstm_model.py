@@ -1,3 +1,6 @@
+# import tensorflow as tf
+# tf.config.set_visible_devices([], 'GPU')
+
 import tensorflow as tf
 # tf.config.run_functions_eagerly(True)       # exec mode (eager vs graph)
 
@@ -7,6 +10,8 @@ import os
 import joblib
 
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+
 from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.layers import LSTM, Dense 
 from tensorflow.keras import Input
@@ -79,28 +84,35 @@ def build_lstm(window_size: int = WINDOW_SIZE):
     Returns: 
         Sequential object: a compiled Keras LSTM model
     """
+    print("1")
     model = Sequential()        #  sequential model object creation
-
-    model.add(LSTM(50, return_sequences=True, input_shape=(window_size, 1)))        # adding layers to object (add is a method). layer 1 adds 50 LSTM units (neurons), pass full seq to next lstm layer (must stack), 60 timestamps (days) and 1 feature (close price)
-    model.add(LSTM(50))                                                             # layer 2. adds another 50 lstm units. outputs final learned representation
+    print("seq created")
+    model.add(Input(shape=(window_size, 1)))
+    model.add(LSTM(50, return_sequences=True))        # adding layers to object (add is a method). layer 1 adds 50 LSTM units (neurons), pass full seq to next lstm layer (must stack), 60 timestamps (days) and 1 feature (close price)
+    print("first lstm added")
+    model.add(LSTM(50))  
+    print("second")                                                           # layer 2. adds another 50 lstm units. outputs final learned representation
     model.add(Dense(1))                                                             # dense = fully connected neural network layer. output layer. adds 1 output neuron. this predicts one val (next stock price)
-
+    print("dense added")
     model.compile(optimizer ="adam", loss="mean_squared_error")                     # adam = optimisation algo. "mean_squared_error" = measures prediction error
-
+    print("3")
     return model
 
 
 def train_lstm(df: pd.DataFrame):
     """
-    Train LSTM model.
+    Train and save LSTM model.
 
     Returns:
         tuple: trained model, fitted scaler, test input data, test, target values
     """
+    print("2")
     X_train, y_train, X_test, y_test, scaler = prepare_data(df)
     model = build_lstm()
     model.fit(X_train, y_train, epochs = 10, batch_size = 32, verbose = 1)          # epoch = one complete pass through the entire training dataset (model learns a little more each epoch). batch_size = groups of 32 at a time 
     
+    save(model, scaler)
+
     return model, scaler, X_test, y_test
 
 
@@ -118,6 +130,21 @@ def predict_next(model: Sequential, df: pd.DataFrame, scaler: MinMaxScaler, wind
     prediction = prediction[0, 0]
 
     return float(prediction)
+
+
+def evaluate_errors(y_test, predictions):
+    mae = mean_absolute_error(y_test, predictions)
+    rmse = mean_squared_error(y_test, predictions) ** 0.5
+    r2 = r2_score(y_test, predictions)
+
+    evaluation = {
+        "MAE": mae,
+        "RMSE": rmse,
+        "R2": r2
+    }
+
+    return evaluation
+
 
 
 def save(model: Model, scaler: MinMaxScaler) -> None:
