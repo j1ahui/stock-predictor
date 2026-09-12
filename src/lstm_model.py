@@ -17,8 +17,12 @@ from tensorflow.keras.layers import LSTM, Dense
 from tensorflow.keras import Input
 
 WINDOW_SIZE = 60                                                # how much past info model looks at. each prediction gets 60 days of history. creates new window each day you move forward (overlaps)
+FIVE_DAY_HORIZON = 5
+NEXT_DAY_HORIZON = 1
+
 
 FEATURES = [                        # input features (col names). gives model multiple indicators describing current state of stock
+    "Close",
     "MA_10",
     "MA_50",
     "Daily_Return",
@@ -41,7 +45,7 @@ def prepare_data(df: pd.DataFrame, test_size: int = 0.2, window_size=WINDOW_SIZE
     Scales training data and creates windows of input and target data.
     """
 
-    data = df[["Close"]].dropna()
+    data = df[FEATURES].dropna()
 
     print("DATA LENGTH:", len(data))
     print("DATA SHAPE:", data.shape)
@@ -51,41 +55,51 @@ def prepare_data(df: pd.DataFrame, test_size: int = 0.2, window_size=WINDOW_SIZE
     train_data = data.iloc[:split_idx]
     test_data = data.iloc[split_idx:]
 
-    scaler = MinMaxScaler()                             # creates object. scaler converts vales into a range between 0 and 1. purpose is to make values smaller and consistent so ml can learn patterns more effectively 
-    scaler.fit(train_data)                              
-    # scaled = scaler.fit_transform(data)                 # learns min and max values and then transforms !!!!! SCALER BEFORE SPLIT LEAK - scales min/max ceiling on all data, including test data.
+    feature_scaler = MinMaxScaler()                             # creates object. scaler converts features into a range between 0 and 1. purpose is to make values smaller and consistent so ml can learn patterns more effectively 
+    feature_scaler.fit(train_data)                              
+    # scaled = scaler.fit_transform(data)                       # learns min and max values and then transforms !!!!! SCALER BEFORE SPLIT LEAK - scales min/max ceiling on all data, including test data.
    
-    train_scaled = scaler.transform(train_data)
-    test_scaled = scaler.transform(pd.concat([train_data.iloc[-window_size:], test_data]))          # creates first window for first prediction. iloc[-window_size:] = last 60 rows
+    train_features_scaled = feature_scaler.transform(train_data)
+    test_feature_with_history = pd.concat([train_data.iloc[-window_size:], test_data])
+    test_features_scaled = feature_scaler.transform(test_feature_with_history)          # creates first window for first prediction. iloc[-window_size:] = last 60 rows
 
-    def make_windows(scaled):
+    target_scaler = MinMaxScaler()
+    train_close = train_data[["Close"]]
+    target_scaler.fit(train_close)
+
+    train_target_scaled = target_scaler.transform(train_close)
+    test_close_with_history = pd.concat([train_data.iloc[-window_size:], test_data])
+    test_target_scaled = target_scaler.transform(test_close_with_history)
+
+
+    def make_windows(feature_data, target_data):                           # produces correct 3d shape instead of needing reshape
         """
         
         """
         X, y = [], []                                   # x = previous 60 days of prices (input data), y = next days price (target values)
 
-        for i in range(window_size, len(scaled) - horizon):       
-            X.append(scaled[i-window_size:i, 0])        # NumPy slicing syntax. general slicing format is array[rows, cols] aka start:stop. i-window_size:i means from i-window_size to i. col 0 is the "Close" col 
-            y.append(scaled[i + horizon, 0])
+        for i in range(window_size, len(feature_data) - horizon):       
+            X.append(feature_data[i-window_size:i, ])        # NumPy slicing syntax. general slicing format is array[rows, cols] aka start:stop. i-window_size:i means from i-window_size to i. col 0 is the "Close" col 
+            y.append(target_data[i + horizon, 0])
             # X: [day 2, day 3, day 4]
             # y:  day 5
         return np.array(X), np.array(y)                 # converts python lists into numpy arrays 
 
-    X_train, y_train = make_windows(train_scaled)
-    X_test, y_test = make_windows(test_scaled)
+    X_train, y_train = make_windows(train_features_scaled, train_target_scaled)
+    X_test, y_test = make_windows(test_features_scaled, test_target_scaled)
 
-    print("train_scaled:", train_scaled.shape)
-    print("test_scaled:", test_scaled.shape)            # adds 60 prev days to make first prediction
+    print("train_scaled:", train_features_scaled.shape)
+    print("test_scaled:", test_features_scaled.shape)            # adds 60 prev days to make first prediction
     print("X_train:", X_train.shape)
     print("y_train:", y_train.shape)
     print("X_test:", X_test.shape)
     print("y_test:", y_test.shape)
 
-    X_train = X_train.reshape((X_train.shape[0], X_train.shape[1], 1))      # [0] = samples, [1] = time steps (prev 60 days), final 1 = features (e.g "Close"). lstm layers require 3 dimensions (samples, time steps, features). reshape adds another dimension (features)
-    X_test = X_test.reshape((X_test.shape[0], X_test.shape[1], 1))
+    # X_train = X_train.reshape((X_train.shape[0], X_train.shape[1], 1))      # [0] = samples, [1] = time steps (prev 60 days), final 1 = features (e.g "Close"). lstm layers require 3 dimensions (samples, time steps, features). reshape adds another dimension (features)
+    # X_test = X_test.reshape((X_test.shape[0], X_test.shape[1], 1))
     print(f"ANSWER!!!!! {X_train.shape}, {y_train.shape}")
 
-    return X_train, y_train, X_test, y_test, scaler
+    return X_train, y_train, X_test, y_test, feature_scaler, target_scaler
 
 
 def build_lstm(window_size: int = WINDOW_SIZE):
@@ -99,9 +113,9 @@ def build_lstm(window_size: int = WINDOW_SIZE):
     Returns: 
         Sequential object: a compiled Keras LSTM model
     """
-    model = Sequential()        #  sequential model object creation
-    model.add(Input(shape=(window_size, 1)))
-    model.add(LSTM(50, return_sequences=True))        # adding layers to object (add is a method). layer 1 adds 50 LSTM units (neurons), pass full seq to next lstm layer (must stack), 60 timestamps (days) and 1 feature (close price)
+    model = Sequential()                                                    # sequential model object creation
+    model.add(Input(shape=(window_size, len(FEATURES))))                    # every timestep has len(features) = 12
+    model.add(LSTM(50, return_sequences=True))                              # adding layers to object (add is a method). layer 1 adds 50 LSTM units (neurons), pass full seq to next lstm layer (must stack), 60 timestamps (days) and 1 feature (close price)
     print("first lstm added")
     model.add(LSTM(50))  
     print("second")                                                           # layer 2. adds another 50 lstm units. outputs final learned representation
@@ -112,7 +126,7 @@ def build_lstm(window_size: int = WINDOW_SIZE):
     return model
 
 
-def train_lstm(df: pd.DataFrame, horizon: int = 5):
+def train_lstm(df: pd.DataFrame, horizon: int = FIVE_DAY_HORIZON):
     """
     Train and save LSTM model.
 
@@ -128,11 +142,11 @@ def train_lstm(df: pd.DataFrame, horizon: int = 5):
     return model, scaler, X_test, y_test
 
 
-def predict_next(model: Sequential, df: pd.DataFrame, scaler: MinMaxScaler, window_size: int = WINDOW_SIZE) -> float:
+def predict_next(model: Sequential, df: pd.DataFrame, scaler: MinMaxScaler, window_size: int = WINDOW_SIZE, horizon: int = 1) -> float:
     """
     
     """
-    data = df[["Close"]].values[-window_size:].astype("float32")             # .values converts to numpy array (by extracting raw numerical array) from pandas df 
+    data = df[FEATURES].iloc[-window_size:]                         # .values converts to numpy array (by extracting raw numerical array) from pandas df 
     scaled = scaler.transform(data).astype("float32")
 
     X = scaled.reshape((1, window_size, 1)).astype("float32")
@@ -144,7 +158,7 @@ def predict_next(model: Sequential, df: pd.DataFrame, scaler: MinMaxScaler, wind
     return float(prediction)
 
 
-def predict_5day(model, X_test, y_test, scaler):
+def prediction_evaluation(model, X_test, y_test, scaler):
     predictions = model.predict(X_test, verbose=0)                          # verbose = terminal progress output
 
     y_test_unscaled = scaler.inverse_transform(y_test.reshape(-1, 1))

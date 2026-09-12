@@ -7,7 +7,7 @@ import pandas as pd
 from src.data_loader import load_stock_dataset
 from src.indicators import add_indicators, calc_rsi, calc_macd, create_trade_signals, calc_bollinger_bands
 from src.model import train_model
-from src.lstm_model import prepare_data, train_lstm, predict_next, evaluate_errors, predict_5day
+from src.lstm_model import prepare_data, train_lstm, predict_next, evaluate_errors, prediction_evaluation
 from src.regression_model import train_regression
 from src.linear_regression import train_linear
 
@@ -76,7 +76,7 @@ def run_lstm(df: pd.DataFrame) -> dict:
     Train LSTM model and generate next-day prediction.
     """
     model, scaler, X_test, y_test = train_lstm(df, horizon=5)
-    prediction, evaluation = predict_5day(model, X_test, y_test, scaler)
+    prediction, evaluation = prediction_evaluation(model, X_test, y_test, scaler)
 
     return {
         "model": model,
