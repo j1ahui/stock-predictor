@@ -16,11 +16,11 @@ from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.layers import LSTM, Dense 
 from tensorflow.keras import Input
 
-WINDOW_SIZE = 60                                                # each prediction gets 60 days of history. creates new window each day you move forward (overlaps)
+WINDOW_SIZE = 60                                                # how much past info model looks at. each prediction gets 60 days of history. creates new window each day you move forward (overlaps)
 
-def prepare_data(df: pd.DataFrame, test_size: int = 0.2, window_size=WINDOW_SIZE):
+def prepare_data(df: pd.DataFrame, test_size: int = 0.2, window_size=WINDOW_SIZE, horizon: int = 1):
     """
-    Prepare stock price data allowing lstm to learn from previous days to predict following days.
+    Prepare stock price data allowing lstm to learn from previous days to predict following day or horizon (how far into future / prediction distance)
 
     Splits data into training and test splits.
     Scales training data and creates windows of input and target data.
@@ -49,9 +49,9 @@ def prepare_data(df: pd.DataFrame, test_size: int = 0.2, window_size=WINDOW_SIZE
         """
         X, y = [], []                                   # x = previous 60 days of prices (input data), y = next days price (target values)
 
-        for i in range(window_size, len(scaled)):       
+        for i in range(window_size, len(scaled) - horizon):       
             X.append(scaled[i-window_size:i, 0])        # NumPy slicing syntax. general slicing format is array[rows, cols] aka start:stop. i-window_size:i means from i-window_size to i. col 0 is the "Close" col 
-            y.append(scaled[i, 0])
+            y.append(scaled[i + horizon, 0])
             # X: [day 2, day 3, day 4]
             # y:  day 5
         return np.array(X), np.array(y)                 # converts python lists into numpy arrays 
@@ -97,14 +97,14 @@ def build_lstm(window_size: int = WINDOW_SIZE):
     return model
 
 
-def train_lstm(df: pd.DataFrame):
+def train_lstm(df: pd.DataFrame, horizon: int = 5):
     """
     Train and save LSTM model.
 
     Returns:
         tuple: trained model, fitted scaler, test input data, test, target values
     """
-    X_train, y_train, X_test, y_test, scaler = prepare_data(df)
+    X_train, y_train, X_test, y_test, scaler = prepare_data(df, horizon=horizon)
     model = build_lstm()
     model.fit(X_train, y_train, epochs = 10, batch_size = 32, verbose = 1)          # epoch = one complete pass through the entire training dataset (model learns a little more each epoch). batch_size = groups of 32 at a time 
     

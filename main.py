@@ -73,7 +73,7 @@ def run_lstm(df: pd.DataFrame) -> dict:
     """
     Train LSTM model and generate next-day prediction.
     """
-    model, scaler, X_test, y_test = train_lstm(df)
+    model, scaler, X_test, y_test = train_lstm(df, horizon=5)
     prediction, evaluation = predict_5day(model, X_test, y_test, scaler)
 
     return {
