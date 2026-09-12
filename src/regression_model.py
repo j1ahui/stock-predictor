@@ -56,6 +56,10 @@ def train_regression(df: pd.DataFrame, target_column: str, model_path: str) -> t
         "evaluation": evaluation
     }
 
+    print("Training target range:", y_train.min(), "to", y_train.max())
+    print("Test target range:", y_test.min(), "to", y_test.max())
+    print("Prediction range:", predictions.min(), "to", predictions.max())
+
     joblib.dump(model_data, model_path)
 
 

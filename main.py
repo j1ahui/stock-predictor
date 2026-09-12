@@ -11,6 +11,8 @@ from src.lstm_model import prepare_data, train_lstm, predict_next, evaluate_erro
 from src.regression_model import train_regression
 from src.linear_regression import train_linear
 
+from compare_models import compare_models
+
 
 def prepare_stock_data(ticker: str) -> pd.DataFrame:              # "AAPL", "TSLA"
     """
@@ -128,6 +130,19 @@ def main():
     print("LSTM: ", lstm_result["prediction"])
     print("Random Forest Regression: ", rf_regression_result["predictions"])
     print("Linear Regression: ", linear_regression["predictions"])
+
+    print("\nModel Evaluation", "*" * 60)
+    print("Linear Regression: ", linear_regression["metrics"])
+    print("RF Regression: ", rf_regression_result["metrics"])
+    print("LSTM: ", lstm_result["evaluation"])
+
+    comparison = compare_models(rf_regression_result["metrics"], linear_regression["metrics"], lstm_result["evaluation"])
+    print("\nModel Comparison")
+    print(comparison.to_string(index=False))
+
+
+
+
 
 
 if __name__ == "__main__":

@@ -53,6 +53,13 @@ def train_linear(df: pd.DataFrame, target_column: str, model_path: str) -> tuple
         "evaluation": evaluation
     }
 
+
+    print("\nRF Regression comparison:")
+    print(pd.DataFrame({
+        "Actual": y_test,
+        "Predicted": predictions
+    }).head(10))
+
     print("saving model")
     joblib.dump(model_data, model_path)
     print("model saved")

@@ -18,6 +18,21 @@ from tensorflow.keras import Input
 
 WINDOW_SIZE = 60                                                # how much past info model looks at. each prediction gets 60 days of history. creates new window each day you move forward (overlaps)
 
+FEATURES = [                        # input features (col names). gives model multiple indicators describing current state of stock
+    "MA_10",
+    "MA_50",
+    "Daily_Return",
+    "Volume_Ratio",
+    "Volatility",
+    "Momentum_5",
+    "Momentum_10",
+    "Dist_MA_10",
+    "Dist_MA_50",
+    "RSI",
+    "MACD",
+]
+
+
 def prepare_data(df: pd.DataFrame, test_size: int = 0.2, window_size=WINDOW_SIZE, horizon: int = 1):
     """
     Prepare stock price data allowing lstm to learn from previous days to predict following day or horizon (how far into future / prediction distance)
