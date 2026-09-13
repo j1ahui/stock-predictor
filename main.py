@@ -7,9 +7,10 @@ import pandas as pd
 from src.data_loader import load_stock_dataset
 from src.indicators import add_indicators, calc_rsi, calc_macd, create_trade_signals, calc_bollinger_bands
 from src.model import train_model
-from src.lstm_model import prepare_data, train_lstm, predict_next, evaluate_errors, prediction_evaluation
+from src.lstm_model import prepare_data, train_lstm, evaluate_errors, prediction_evaluation
 from src.regression_model import train_regression
 from src.linear_regression import train_linear
+from src.ridge_model import train_ridge
 
 from compare_models import compare_models
 
@@ -73,14 +74,15 @@ def run_random_forest(df: pd.DataFrame) -> dict:
 
 def run_lstm(df: pd.DataFrame) -> dict:
     """
-    Train LSTM model and generate next-day prediction.
+    Train LSTM model and generate 5-day prediction.
     """
-    model, scaler, X_test, y_test = train_lstm(df, horizon=5)
-    prediction, evaluation = prediction_evaluation(model, X_test, y_test, scaler)
+    model, feature_scaler, target_scaler, X_test, y_test = train_lstm(df, horizon=5)
+    prediction, evaluation = prediction_evaluation(model, X_test, y_test, target_scaler)
 
     return {
         "model": model,
-        "scaler": scaler,
+        "feature_scaler": feature_scaler,
+        "target_scaler": target_scaler,
         "X_test": X_test,
         "y_test": y_test,
         "prediction": prediction,
@@ -111,6 +113,19 @@ def run_linear(df: pd.DataFrame) -> dict:
         "model": model,
         "predictions": predictions,
         "metrics": metrics
+    }
+
+
+def run_ridge(df: pd.DataFrame) -> dict:
+    """
+    Train ridge regression model and predict price in 5 days.
+    """
+    model, predictions, evaluation = train_ridge(df, "Target_5Day_Price", "models/ridge_regression_5day.pkl")
+
+    return {
+        "model": model,
+        "predictions": predictions,
+        "metrics": evaluation
     }
 
 

@@ -15,8 +15,9 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.layers import LSTM, Dense 
 from tensorflow.keras import Input
+from tensorflow.keras.callbacks import EarlyStopping
 
-WINDOW_SIZE = 60                                                # how much past info model looks at. each prediction gets 60 days of history. creates new window each day you move forward (overlaps)
+WINDOW_SIZE = 60                                               # how much past info model looks at. each prediction gets 60 days of history. creates new window each day you move forward (overlaps)
 FIVE_DAY_HORIZON = 5
 NEXT_DAY_HORIZON = 1
 
@@ -26,18 +27,18 @@ FEATURES = [                        # input features (col names). gives model mu
     "MA_10",
     "MA_50",
     "Daily_Return",
-    "Volume_Ratio",
-    "Volatility",
-    "Momentum_5",
-    "Momentum_10",
-    "Dist_MA_10",
-    "Dist_MA_50",
-    "RSI",
-    "MACD",
+    # "Volume_Ratio",
+    # "Volatility",
+    # "Momentum_5",
+    # "Momentum_10",
+    # "Dist_MA_10",
+    # "Dist_MA_50",
+    # "RSI",
+    # "MACD",
 ]
 
 
-def prepare_data(df: pd.DataFrame, test_size: int = 0.2, window_size=WINDOW_SIZE, horizon: int = 1):
+def prepare_data(df: pd.DataFrame, test_size: float = 0.2, window_size=WINDOW_SIZE, horizon: int = 1):
     """
     Prepare stock price data allowing lstm to learn from previous days to predict following day or horizon (how far into future / prediction distance)
 
@@ -68,7 +69,7 @@ def prepare_data(df: pd.DataFrame, test_size: int = 0.2, window_size=WINDOW_SIZE
     target_scaler.fit(train_close)
 
     train_target_scaled = target_scaler.transform(train_close)
-    test_close_with_history = pd.concat([train_data.iloc[-window_size:], test_data])
+    test_close_with_history = pd.concat([train_data[["Close"]].iloc[-window_size:], test_data[["Close"]]])
     test_target_scaled = target_scaler.transform(test_close_with_history)
 
 
@@ -80,7 +81,7 @@ def prepare_data(df: pd.DataFrame, test_size: int = 0.2, window_size=WINDOW_SIZE
 
         for i in range(window_size, len(feature_data) - horizon):       
             X.append(feature_data[i-window_size:i, ])        # NumPy slicing syntax. general slicing format is array[rows, cols] aka start:stop. i-window_size:i means from i-window_size to i. col 0 is the "Close" col 
-            y.append(target_data[i + horizon, 0])
+            y.append(target_data[i + horizon - 1, 0])
             # X: [day 2, day 3, day 4]
             # y:  day 5
         return np.array(X), np.array(y)                 # converts python lists into numpy arrays 
@@ -115,7 +116,7 @@ def build_lstm(window_size: int = WINDOW_SIZE):
     """
     model = Sequential()                                                    # sequential model object creation
     model.add(Input(shape=(window_size, len(FEATURES))))                    # every timestep has len(features) = 12
-    model.add(LSTM(50, return_sequences=True))                              # adding layers to object (add is a method). layer 1 adds 50 LSTM units (neurons), pass full seq to next lstm layer (must stack), 60 timestamps (days) and 1 feature (close price)
+    model.add(LSTM(128, return_sequences=True))                              # adding layers to object (add is a method). layer 1 adds 50 LSTM units (neurons), pass full seq to next lstm layer (must stack), 60 timestamps (days) and 1 feature (close price)
     print("first lstm added")
     model.add(LSTM(50))  
     print("second")                                                           # layer 2. adds another 50 lstm units. outputs final learned representation
@@ -133,39 +134,48 @@ def train_lstm(df: pd.DataFrame, horizon: int = FIVE_DAY_HORIZON):
     Returns:
         tuple: trained model, fitted scaler, test input data, test, target values
     """
-    X_train, y_train, X_test, y_test, scaler = prepare_data(df, horizon=horizon)
+    X_train, y_train, X_test, y_test, feature_scaler, target_scaler = prepare_data(df, horizon=horizon)
     model = build_lstm()
-    model.fit(X_train, y_train, epochs = 10, batch_size = 32, verbose = 1)          # epoch = one complete pass through the entire training dataset (model learns a little more each epoch). batch_size = groups of 32 at a time 
+
+    # early_stopping = EarlyStopping(monitor="val_loss", patience=5, restore_best_weights=True)                                                  # val_loss detects overfitting. patience=5 means training will stop after validation loss has failed to improve for 5 consecutive epochs. weights = number inside neural networks that the model learns (learning = algorithm is repeatedly adjusting its weights to reduce loss)
+
+    model.fit(X_train, y_train, epochs=10, batch_size=32, validation_split=0.2, shuffle=False, verbose=1)          # epoch = one complete pass through the entire training dataset (model learns a little more each epoch). batch_size = groups of 32 at a time 
     
-    save(model, scaler)
+    save(model, feature_scaler, target_scaler)
 
-    return model, scaler, X_test, y_test
+    return model, feature_scaler, target_scaler, X_test, y_test
 
 
-def predict_next(model: Sequential, df: pd.DataFrame, scaler: MinMaxScaler, window_size: int = WINDOW_SIZE, horizon: int = 1) -> float:
+def predict_price(model: Sequential, df: pd.DataFrame, feature_scaler: MinMaxScaler, target_scaler: MinMaxScaler, window_size: int = WINDOW_SIZE, horizon: int = 1) -> float:
     """
     
     """
     data = df[FEATURES].iloc[-window_size:]                         # .values converts to numpy array (by extracting raw numerical array) from pandas df 
-    scaled = scaler.transform(data).astype("float32")
+    scaled = feature_scaler.transform(data).astype("float32")
 
-    X = scaled.reshape((1, window_size, 1)).astype("float32")
+    X = scaled.reshape((1, window_size, len(FEATURES))).astype("float32")
 
     prediction = model(X, training = False).numpy()
-    prediction = scaler.inverse_transform(prediction)               # inverse_transform() converts scaled values back to og scale
+    prediction = target_scaler.inverse_transform(prediction)               # inverse_transform() converts scaled values back to og scale
     prediction = prediction[0, 0]
 
     return float(prediction)
 
 
-def prediction_evaluation(model, X_test, y_test, scaler):
+def prediction_evaluation(model, X_test, y_test, target_scaler):
     predictions = model.predict(X_test, verbose=0)                          # verbose = terminal progress output
 
-    y_test_unscaled = scaler.inverse_transform(y_test.reshape(-1, 1))
+    y_test_unscaled = target_scaler.inverse_transform(y_test.reshape(-1, 1))
 
-    predictions_unscaled = scaler.inverse_transform(predictions)
+    predictions_unscaled = target_scaler.inverse_transform(predictions)
 
     evaluation = evaluate_errors(y_test_unscaled, predictions_unscaled)
+
+    print("Actual min: ", y_test_unscaled.min())
+    print("Actual max: ", y_test_unscaled.max())
+
+    print("Prediction min: ", predictions_unscaled.min())
+    print("Prediction max: ", predictions_unscaled.max())
 
     return predictions_unscaled, evaluation
 
@@ -184,11 +194,11 @@ def evaluate_errors(y_test, predictions):
     return evaluation
 
 
-
-def save(model: Model, scaler: MinMaxScaler) -> None:
+def save(model: Model, feature_scaler: MinMaxScaler, target_scaler: MinMaxScaler) -> None:
 
     os.makedirs("models", exist_ok = True)
     model.save("models/lstm_model.keras")
-    joblib.dump(scaler, "models/scaler.pkl")
+    joblib.dump(feature_scaler, "models/feature_scaler.pkl")
+    joblib.dump(target_scaler, "models/target_scaler.pkl")
 
-    print("Model + scaler saved successfully")
+    print("Model + scalers saved successfully")
