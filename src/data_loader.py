@@ -1,7 +1,7 @@
 import yfinance as yf   # yfinance lib
 import pandas as pd 
 
-def load_stock_dataset(ticker: str, period: int = "6y") -> pd.DataFrame:    # ticker = stock symbol for wanted data. period = data length. example: load_stock_dataset("AAPL")
+def load_stock_dataset(ticker: str, period: int = "8y") -> pd.DataFrame:    # ticker = stock symbol for wanted data. period = data length. example: load_stock_dataset("AAPL")
     """
     Loads stock data from Yahoo finance.
 

@@ -126,13 +126,10 @@ def calc_risk_score(pnl_history, periods_per_year=252):
 
 def walk_forward(df, target_column, n_splits=5):
     """
-    Splits data into n_splits chunks.
+    Splits data into n_splits chunks (folds).       
     Trains on each chunk, tests on the next.
     Returns capital history across all folds.
     """
-
-    # chunk = fold 
-
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.metrics import accuracy_score
 

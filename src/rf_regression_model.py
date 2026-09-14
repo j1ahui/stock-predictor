@@ -1,6 +1,6 @@
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, TimeSeriesSplit, RandomizedSearchCV
 
 import numpy as np
 import pandas as pd 
@@ -27,8 +27,8 @@ def train_regression(df: pd.DataFrame, target_column: str, model_path: str) -> t
 
     Model learns relationship between training features and target values then inferences values for test samples.
     """
-    df = df.dropna().copy()
-    
+    df = df[FEATURES + [target_column]].dropna().copy()             # df = df.dropna().copy()
+
     X = df[FEATURES]
     y = df[target_column]
 
@@ -36,10 +36,34 @@ def train_regression(df: pd.DataFrame, target_column: str, model_path: str) -> t
         X, y, test_size=0.2, shuffle=False
     )
 
-    model = RandomForestRegressor(n_estimators=200, random_state=33)
+    tscv = TimeSeriesSplit(n_splits=5)                                  # n_splits=5 means create 5 chronological validation splits while respecting time order
 
-    model.fit(X_train, y_train)
+    param_grid = {                                                      # keys are rf parameter names
+        "n_estimators": [100, 200, 300, 500],                           # no. trees
+        "max_depth": [None, 5, 10, 20],
+        "min_samples_split": [2, 5, 10],
+        "min_samples_leaf": [1, 2, 4],
+        "max_features": ["sqrt", "log2", None]
+    }
+
+    search = RandomizedSearchCV(
+        estimator=RandomForestRegressor(random_state=10),           # estimator = ml model to tune
+        param_distributions=param_grid,                             # combos to try
+        n_iter=20,                                                  # randomly try 20 different combinations of those parameters (4 × 4 × 3 × 3 × 3 = 432 combinations)
+        scoring="neg_root_mean_squared_error",
+        cv=tscv,                                                    # use tscv (time series cross validation) object for cross validation aka 5 chronological validation splits
+        random_state=10,
+        n_jobs=-1                                                   # how many CPU cores to use (-1 = all available CPU cores)
+    )
+
+    # model = RandomForestRegressor(n_estimators=200, random_state=10)
+
+    search.fit(X_train, y_train)
+    model = search.best_estimator_                                      # best_estimator_ = attribute of search object
     predictions = model.predict(X_test)
+
+    print("Best parameters:", search.best_params_)
+    print("Best CV RMSE:", -search.best_score_)                         # scikit learns search functions are designed so higher scores are better (-10 > -20)
 
     mae = mean_absolute_error(y_test, predictions)                      # calculates average absolute error (uses absolute values)
     rmse = mean_squared_error(y_test, predictions) ** 0.5               # calcs average error (squares errors first) but sensitive to large differences

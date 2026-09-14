@@ -1,19 +1,42 @@
 import faulthandler, signal
 faulthandler.register(signal.SIGUSR1)
 
-import joblib
 import pandas as pd
 
 from src.data_loader import load_stock_dataset
 from src.indicators import add_indicators, calc_rsi, calc_macd, create_trade_signals, calc_bollinger_bands
-from src.model import train_model
+from src.rf_model import train_model
 from src.lstm_model import prepare_data, train_lstm, evaluate_errors, prediction_evaluation
-from src.regression_model import train_regression
+from src.rf_regression_model import train_regression
 from src.linear_regression import train_linear
 from src.ridge_model import train_ridge
 
 from compare_models import compare_models
 
+FEATURES = [                        # input features (col names). gives model multiple indicators describing current state of stock
+    "Close",
+    "MA_10",
+    "MA_50",
+    "Daily_Return",
+    "Volume_Ratio",
+    "Volatility",
+    "Momentum_5",
+    "Momentum_10",
+    "Dist_MA_10",
+    "Dist_MA_50",
+    "RSI",
+    "MACD",
+]
+
+def prepare_regression_data(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    
+    """
+    target = "Target_5Day_Price"
+
+    regression_df = df[FEATURES + [target]].dropna().copy()
+
+    return regression_df
 
 def prepare_stock_data(ticker: str) -> pd.DataFrame:              # "AAPL", "TSLA"
     """
@@ -134,11 +157,13 @@ def main():
 
     df = prepare_stock_data(ticker)
 
+    regression_df = prepare_regression_data(df)
+
     rf_result = run_random_forest(df)
     lstm_result = run_lstm(df)
-    rf_regression_result = run_regression(df)
-    linear_regression = run_linear(df)
-    ridge_results = run_ridge(df)
+    rf_regression_result = run_regression(regression_df)
+    linear_regression = run_linear(regression_df)
+    ridge_results = run_ridge(regression_df)
 
     print("Stock: ", ticker)
     print("Random Forest 1-Day", rf_result["prediction_1day"])

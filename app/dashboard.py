@@ -20,7 +20,7 @@ import streamlit as st
 
 from src.data_loader import load_stock_dataset
 from src.indicators import add_indicators, calc_rsi, calc_macd, create_trade_signals, calc_bollinger_bands
-from src.model import train_model
+from src.rf_model import train_model
 from src.lstm_model import train_lstm, prepare_data, predict_price 
 from src.backtest import generate_signals_rf, generate_signals_lstm, backtest, sharpe_ratio, max_drawdown, calc_risk_score, walk_forward, monte_carlo
 

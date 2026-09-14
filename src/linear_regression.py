@@ -25,7 +25,7 @@ def train_linear(df: pd.DataFrame, target_column: str, model_path: str) -> tuple
     """
     Train a Linear regression model and evaluate its predictions.
     """
-    df = df.dropna().copy()
+    # df = df[FEATURES + [target_column]].dropna().copy()         # concatenating lists. [target_column] creates a list containing one item (Target_5Day_Price)
 
     X = df[FEATURES]
     y = df[target_column]

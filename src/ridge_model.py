@@ -1,7 +1,7 @@
 from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler                        # scaler class that standardises with a standard deviation of 1 (-1 to 1)
 from sklearn.pipeline import make_pipeline
 
 import numpy as np 
@@ -27,7 +27,7 @@ def train_ridge(df: pd.DataFrame, target_column: str, model_path: str) -> tuple[
     """
     Train a Ridge regression model and evaluate its predictions.
     """
-    df = df[FEATURES + [target_column]].dropna().copy()
+    # df = df[FEATURES + [target_column]].dropna().copy()
 
     X = df[FEATURES]
     y = df[target_column]
