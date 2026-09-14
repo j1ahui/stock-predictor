@@ -7,6 +7,7 @@ import pandas as pd
 import joblib
 
 FEATURES = [                        # input features (col names). gives model multiple indicators describing current state of stock
+    "Close",
     "MA_10",
     "MA_50",
     "Daily_Return",

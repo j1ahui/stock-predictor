@@ -125,7 +125,7 @@ def run_ridge(df: pd.DataFrame) -> dict:
     return {
         "model": model,
         "predictions": predictions,
-        "metrics": evaluation
+        "evaluation": evaluation
     }
 
 
@@ -138,6 +138,7 @@ def main():
     lstm_result = run_lstm(df)
     rf_regression_result = run_regression(df)
     linear_regression = run_linear(df)
+    ridge_results = run_ridge(df)
 
     print("Stock: ", ticker)
     print("Random Forest 1-Day", rf_result["prediction_1day"])
@@ -151,7 +152,7 @@ def main():
     print("RF Regression: ", rf_regression_result["metrics"])
     print("LSTM: ", lstm_result["evaluation"])
 
-    comparison = compare_models(rf_regression_result["metrics"], linear_regression["metrics"], lstm_result["evaluation"])
+    comparison = compare_models(rf_regression_result["metrics"], linear_regression["metrics"], lstm_result["evaluation"], ridge_results["evaluation"])
     print("\nModel Comparison")
     print(comparison.to_string(index=False))
 

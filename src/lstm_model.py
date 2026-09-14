@@ -27,14 +27,14 @@ FEATURES = [                        # input features (col names). gives model mu
     "MA_10",
     "MA_50",
     "Daily_Return",
-    # "Volume_Ratio",
-    # "Volatility",
-    # "Momentum_5",
-    # "Momentum_10",
-    # "Dist_MA_10",
-    # "Dist_MA_50",
-    # "RSI",
-    # "MACD",
+    "Volume_Ratio",
+    "Volatility",
+    "Momentum_5",
+    "Momentum_10",
+    "Dist_MA_10",
+    "Dist_MA_50",
+    "RSI",
+    "MACD",
 ]
 
 
@@ -79,7 +79,7 @@ def prepare_data(df: pd.DataFrame, test_size: float = 0.2, window_size=WINDOW_SI
         """
         X, y = [], []                                   # x = previous 60 days of prices (input data), y = next days price (target values)
 
-        for i in range(window_size, len(feature_data) - horizon):       
+        for i in range(window_size, len(feature_data) - horizon + 1):       # + 1 includes final window      
             X.append(feature_data[i-window_size:i, ])        # NumPy slicing syntax. general slicing format is array[rows, cols] aka start:stop. i-window_size:i means from i-window_size to i. col 0 is the "Close" col 
             y.append(target_data[i + horizon - 1, 0])
             # X: [day 2, day 3, day 4]

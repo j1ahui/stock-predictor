@@ -1,12 +1,15 @@
 from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import make_pipeline
 
 import numpy as np 
 import pandas as pd 
 import joblib
 
 FEATURES = [                        # input features (col names). gives model multiple indicators describing current state of stock
+    "Close",
     "MA_10",
     "MA_50",
     "Daily_Return",
@@ -24,16 +27,20 @@ def train_ridge(df: pd.DataFrame, target_column: str, model_path: str) -> tuple[
     """
     Train a Ridge regression model and evaluate its predictions.
     """
-    df = df.dropna().copy()
+    df = df[FEATURES + [target_column]].dropna().copy()
 
     X = df[FEATURES]
     y = df[target_column]
 
-    X_train, y_train, X_test, y_test = train_test_split(
+    X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, shuffle=False
     )
 
-    model = Ridge(alpha=1.0)                            # alpha controls how strongly Ridge regression penalises large coefficients (regular linear regression tries to minimise prediction error while ridge minimises both prediction error and adds a penalty)
+    model = make_pipeline(StandardScaler(), Ridge(alpha=1.0))                  # alpha controls how strongly Ridge regression penalises large coefficients (regular linear regression tries to minimise prediction error while ridge minimises both prediction error and adds a penalty)
+    print("Ridge dataframe:", df.shape)
+    print("Ridge X:", X.shape)
+    print("Ridge y:", y.shape)
+    
     model.fit(X_train, y_train)
 
     predictions = model.predict(X_test)
