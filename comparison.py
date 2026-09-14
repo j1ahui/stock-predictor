@@ -12,5 +12,19 @@ def compare_models(rfr_metrics, linear_metrics, lstm_metrics, ridge_metrics):
 
     })
 
+    return comparison
+
+
+def compare_portfolios(optimised_portfolio, equal_portfolio):
+    """
+    
+    """
+    comparison = pd.DataFrame({
+        "Portfolio Type": ["Optimised", "Equal Weights"],
+        "Expected Return": [optimised_portfolio["expected_return"], equal_portfolio["expected_return"]],
+        "Volatility": [optimised_portfolio["volatility"], equal_portfolio["volatility"]],
+        "Sharpe Ratio": [optimised_portfolio["sharpe_ratio"], equal_portfolio["sharpe_ratio"]]
+        
+    })
 
     return comparison

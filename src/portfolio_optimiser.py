@@ -32,11 +32,11 @@ def optimise_portfolio(prices: pd.DataFrame) -> dict:
         """
         return np.sum(mean_returns * weights)       # produces a numpy scalar by combining elements into one value. numpy multiplies corresponding elements       
 
-    def portfolio_volatility(weights: np.ndarray) -> np.float64 :
+    def portfolio_volatility(weights: np.ndarray) -> np.float64:        # float64 = decimal number stored using 64 bits of memory
         """
         Calculate portfolios annualised volatility using portfolios weights and covariance matrix.
         """
-        return np.sqrt(weights.T @ covariance_matrix @ weights)    # @ = matrix multiplication
+        return np.sqrt(weights.T @ covariance_matrix @ weights)    # @ = matrix multiplication. weights.T = transpose (orientation of an array aka col and row direction) of weights
     
     def negative_sharpe_ratio(weights: np.ndarray) -> float:
         """
@@ -67,4 +67,28 @@ def optimise_portfolio(prices: pd.DataFrame) -> dict:
         "volatility": portfolio_volatility(optimal_weights),
         "success": result.success                   # boolean. tells u if scipy believes if optimisation has successfully converged
     }
-    
+
+
+def equal_weight_portfolio(prices: pd.DataFrame) -> dict:
+    """
+    Calculate performance of an equal-weight portfolio.
+    """
+    returns = prices.pct_change().dropna()
+
+    mean_returns = returns.mean() * 252
+    covariance_matrix = returns.cov() * 252
+
+    num_assets = len(prices.columns)
+
+    weights = np.array([1 / num_assets] * num_assets)
+
+    portfolio_ret = np.sum(mean_returns * weights)
+    portfolio_vol = np.sqrt(weights.T @ covariance_matrix @ weights)
+    sharpe_ratio = portfolio_ret / portfolio_vol
+
+    return {
+        "weights": dict(zip(prices.columns, weights)),      
+        "sharpe_ratio": sharpe_ratio,                             
+        "expected_return": portfolio_ret,
+        "volatility": portfolio_vol,
+    }

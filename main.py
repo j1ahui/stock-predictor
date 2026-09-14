@@ -2,6 +2,7 @@ import faulthandler, signal
 faulthandler.register(signal.SIGUSR1)
 
 import pandas as pd
+import yfinance as yf
 
 from src.data_loader import load_stock_dataset
 from src.indicators import add_indicators, calc_rsi, calc_macd, create_trade_signals, calc_bollinger_bands
@@ -10,8 +11,9 @@ from src.lstm_model import prepare_data, train_lstm, evaluate_errors, prediction
 from src.rf_regression_model import train_regression
 from src.linear_regression import train_linear
 from src.ridge_model import train_ridge
+from src.portfolio_optimiser import optimise_portfolio, equal_weight_portfolio
 
-from compare_models import compare_models
+from comparison import compare_models, compare_portfolios
 
 FEATURES = [                        # input features (col names). gives model multiple indicators describing current state of stock
     "Close",
@@ -145,11 +147,38 @@ def run_ridge(df: pd.DataFrame) -> dict:
     """
     model, predictions, evaluation = train_ridge(df, "Target_5Day_Price", "models/ridge_regression_5day.pkl")
 
-    return {
+    return {                            # creates dict from the above unpacking
         "model": model,
         "predictions": predictions,
         "evaluation": evaluation
     }
+
+
+def run_portfolio_optimiser() -> dict:
+    """
+    Download historical prices and optimise portfolio weights to maximise Sharpe ratio, subject to allocation constraints.
+    """
+    tickers = ["AAPL", "MSFT", "NVDA", "AMZN", "GOOGL"]
+
+    prices = yf.download(
+        tickers, period="5y", auto_adjust=True,
+    )["Close"]
+
+    return optimise_portfolio(prices)
+
+
+def run_equal_weights_portfolio() -> dict:
+    """
+    
+    """
+    tickers = ["AAPL", "MSFT", "NVDA", "AMZN", "GOOGL"]
+
+    prices = yf.download(
+        tickers, period="5y", auto_adjust=True,
+    )["Close"]
+
+    return equal_weight_portfolio(prices)
+
 
 
 def main():
@@ -165,6 +194,10 @@ def main():
     linear_regression = run_linear(regression_df)
     ridge_results = run_ridge(regression_df)
 
+    optimised_portfolio_result = run_portfolio_optimiser()
+    equal_weights_portfolio_result = run_equal_weights_portfolio()
+
+
     print("Stock: ", ticker)
     print("Random Forest 1-Day", rf_result["prediction_1day"])
     print("Random Forest 5-day: ", rf_result["prediction_5day"])
@@ -178,8 +211,22 @@ def main():
     print("LSTM: ", lstm_result["evaluation"])
 
     comparison = compare_models(rf_regression_result["metrics"], linear_regression["metrics"], lstm_result["evaluation"], ridge_results["evaluation"])
-    print("\nModel Comparison")
+    print("\nModel Comparison", "*" * 60)
     print(comparison.to_string(index=False))
+
+    print("\nPortfolio Optimisation", "*" * 60)
+    
+    for ticker, weight in optimised_portfolio_result["weights"].items():
+        print(f"{ticker}: {weight:.2%}")
+
+    print(f"Expected Return: {optimised_portfolio_result["expected_return"]:.2%}")
+    print(f"Volatility: {optimised_portfolio_result["volatility"]:.2%}")
+    print(f"Sharpe Ratio: {optimised_portfolio_result["sharpe_ratio"]:.2f}")
+
+    print("\nModel Comparison", "*" * 60)
+
+    portfolio_comparison = compare_portfolios(optimised_portfolio_result[""])
+
 
 
 
