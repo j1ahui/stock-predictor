@@ -46,7 +46,7 @@ def train_regression(df: pd.DataFrame, target_column: str, model_path: str) -> t
         "max_features": ["sqrt", "log2", None]
     }
 
-    search = RandomizedSearchCV(
+    search = RandomizedSearchCV(                                    # search/tuning object that manages rf models
         estimator=RandomForestRegressor(random_state=10),           # estimator = ml model to tune
         param_distributions=param_grid,                             # combos to try
         n_iter=20,                                                  # randomly try 20 different combinations of those parameters (4 × 4 × 3 × 3 × 3 = 432 combinations)
@@ -59,7 +59,7 @@ def train_regression(df: pd.DataFrame, target_column: str, model_path: str) -> t
     # model = RandomForestRegressor(n_estimators=200, random_state=10)
 
     search.fit(X_train, y_train)
-    model = search.best_estimator_                                      # best_estimator_ = attribute of search object
+    model = search.best_estimator_                                      # best_estimator_ = attribute of search object. best rf found
     predictions = model.predict(X_test)
 
     print("Best parameters:", search.best_params_)

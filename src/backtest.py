@@ -59,9 +59,10 @@ def backtest(df, signals):
 def sharpe_ratio(returns, rf=0.0, periods_per_year=252):                # rf = risk free return per free. ppy = 252 trading days                                   
     """
     how much return you get for each unit of risk (reward vs risk)
-    high sharpe ratio = good returns for low risk
-    low sharpe = weak returns / too much volatility 
-    negative = strategy loses money on a risk adjusted basis
+
+    high sharpe ratio = good returns for low risk.
+    low sharpe = weak returns / too much volatility.
+    negative = strategy loses money on a risk adjusted basis.
     """
 
     mean = np.mean(returns)
