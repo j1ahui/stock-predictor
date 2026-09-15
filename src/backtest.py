@@ -1,4 +1,5 @@
 import numpy as np 
+import pandas as pd
 
 def generate_signals_rf(predictions: np.ndarray, probabilities: np.ndarray | None = None, threshold: float = 0.6) -> np.ndarray:
     """
@@ -26,11 +27,22 @@ def generate_signals_rf(predictions: np.ndarray, probabilities: np.ndarray | Non
     return np.where(predictions == 1, 1, -1)
 
 
-def generate_signals_lstm(pred_prices, actual_prices):
-    return (pred_prices > actual_prices).astype(int)
+def generate_signals_lstm(prediction_prices: np.ndarray, actual_prices: np.ndarray) -> np.ndarray:
+    """
+    Create buy/sell signals by comparing predicted and actual prices.
+
+    1 = predicted price is higher than actual (buy)
+    0 = predicted price is lower than actual (sell)
+    """
+    return (prediction_prices > actual_prices).astype(int)
 
 
-def backtest(df, signals):
+def backtest(df: pd.DataFrame, signals: np.ndarray) -> tuple[float, np.ndarray]:
+    """
+    Backtest a trading strategy using generated signals.
+
+    Strategy enters a position when signal is 1 and no position is currently held and exists position when signal becomes 0.
+    """
 
     initial_capital = 10000
     capital = initial_capital

@@ -154,22 +154,9 @@ def run_ridge(df: pd.DataFrame) -> dict:
     }
 
 
-def run_portfolio_optimiser() -> dict:
+def run_portfolio_analysis() -> tuple[dict, dict]:
     """
-    Download historical prices and optimise portfolio weights to maximise Sharpe ratio, subject to allocation constraints.
-    """
-    tickers = ["AAPL", "MSFT", "NVDA", "AMZN", "GOOGL"]
-
-    prices = yf.download(
-        tickers, period="5y", auto_adjust=True,
-    )["Close"]
-
-    return optimise_portfolio(prices)
-
-
-def run_equal_weights_portfolio() -> dict:
-    """
-    
+    Download historical prices and compare optimised and equal-weight portfolios.
     """
     tickers = ["AAPL", "MSFT", "NVDA", "AMZN", "GOOGL"]
 
@@ -177,8 +164,10 @@ def run_equal_weights_portfolio() -> dict:
         tickers, period="5y", auto_adjust=True,
     )["Close"]
 
-    return equal_weight_portfolio(prices)
+    optimised = optimise_portfolio(prices)
+    equal_weight = equal_weight_portfolio(prices)
 
+    return optimised, equal_weight
 
 
 def main():
@@ -194,8 +183,7 @@ def main():
     linear_regression = run_linear(regression_df)
     ridge_results = run_ridge(regression_df)
 
-    optimised_portfolio_result = run_portfolio_optimiser()
-    equal_weights_portfolio_result = run_equal_weights_portfolio()
+    optimised_portfolio_result, equal_weights_portfolio_result = run_portfolio_analysis()
 
 
     print("Stock: ", ticker)
@@ -223,9 +211,10 @@ def main():
     print(f"Volatility: {optimised_portfolio_result["volatility"]:.2%}")
     print(f"Sharpe Ratio: {optimised_portfolio_result["sharpe_ratio"]:.2f}")
 
-    print("\nModel Comparison", "*" * 60)
+    portfolio_comparison = compare_portfolios(optimised_portfolio_result, equal_weights_portfolio_result)
+    print("\nPortfolio Comparison", "*" * 60)
+    print(portfolio_comparison.to_string(index=False))
 
-    portfolio_comparison = compare_portfolios(optimised_portfolio_result[""])
 
 
 
